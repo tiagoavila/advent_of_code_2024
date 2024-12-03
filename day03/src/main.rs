@@ -19,12 +19,14 @@ fn part1(input_path: &str) -> i32 {
 
     // Find all matches
     re.find_iter(&input)
-        .map(|m| {
-            let result = m.as_str().replace("mul(", "").replace(")", "");
-            let (x, y) = result.split_once(",").unwrap();
-            x.parse::<i32>().unwrap_or(0) * y.parse::<i32>().unwrap_or(0)
-        })
+        .map(|m| parse_and_multiply(m.as_str()))
         .sum()
+}
+
+fn parse_and_multiply(m: &str) -> i32 {
+    let result = m.replace("mul(", "").replace(")", "");
+    let (x, y) = result.split_once(",").unwrap();
+    x.parse::<i32>().unwrap_or(0) * y.parse::<i32>().unwrap_or(0)
 }
 
 fn part2(input_path: &str) -> i32 {
@@ -40,9 +42,7 @@ fn part2(input_path: &str) -> i32 {
     for item in matches.iter_mut() {
         if mul_enabled {
             if item.contains("mul") {
-                let result = item.replace("mul(", "").replace(")", "");
-                let (x, y) = result.split_once(",").unwrap();
-                sum += x.parse::<i32>().unwrap_or(0) * y.parse::<i32>().unwrap_or(0);
+                sum += parse_and_multiply(item);
             } else if *item == "don't()" {
                 mul_enabled = false;
             }
