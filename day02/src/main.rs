@@ -13,7 +13,7 @@ fn part1(input_path: &str) -> i32 {
     read_file(input_path)
         .unwrap()
         .iter()
-        .filter(|line| report_is_valid(line))
+        .filter(|line_without_current| report_is_valid(line_without_current))
         .count() as i32
 }
 
@@ -21,12 +21,12 @@ fn part2(input_path: &str) -> i32 {
     read_file(input_path)
         .unwrap()
         .iter()
-        .filter(|line| report_is_valid_using_problem_dampener(line))
+        .filter(|line_without_current| report_is_valid_using_problem_dampener(line_without_current))
         .count() as i32
 }
 
-fn report_is_valid(line: &str) -> bool {
-    let parts: Vec<i32> = line
+fn report_is_valid(line_without_current: &str) -> bool {
+    let parts: Vec<i32> = line_without_current
         .split(" ")
         .map(|element| element.parse::<i32>().unwrap())
         .collect();
@@ -71,8 +71,8 @@ fn validate_decreasing(parts: Vec<i32>) -> bool {
     true
 }
 
-fn report_is_valid_using_problem_dampener(line: &str) -> bool {
-    let parts: Vec<i32> = line
+fn report_is_valid_using_problem_dampener(line_without_current: &str) -> bool {
+    let parts: Vec<i32> = line_without_current
         .split(" ")
         .map(|element| element.parse::<i32>().unwrap())
         .collect();
@@ -81,9 +81,9 @@ fn report_is_valid_using_problem_dampener(line: &str) -> bool {
     let second_number = parts[1];
 
     if first_number == second_number {
-        let slice = parse_parts_to_string(parts[1..].to_vec());
+        let slice = parse_parts_to_string(&parts[1..].to_vec());
 
-        return report_is_valid(&slice);
+        report_is_valid(&slice);
     }
 
     if first_number < second_number {
@@ -94,36 +94,64 @@ fn report_is_valid_using_problem_dampener(line: &str) -> bool {
 }
 
 fn validate_increasing_using_problem_dampener(mut parts: Vec<i32>) -> bool {
-    let mut iter = parts.iter();
-    if let Some(mut previous_number) = iter.next() {
-        for (index, number) in iter.enumerate() {
-            if number <= previous_number || number - previous_number > 3 {
-                parts.remove(index + 1);
-                let line = parse_parts_to_string(parts);
-                return report_is_valid(&line);
-            }
-            previous_number = number;
+    for i in 1..=parts.len() - 2 {
+        let previous_number = parts[i - 1];
+        let number = parts[i];
+        let next_number = parts[i + 1];
+
+        if (number <= previous_number || number - previous_number > 3)
+            || (next_number <= number || next_number - number > 3)
+        {
+            let mut parts_clone = parts.clone();
+            let mut parts_clone2 = parts.clone();
+            parts.remove(i);
+            parts_clone.remove(i + 1);
+            parts_clone2.remove(i - 1);
+            let line_without_current = parse_parts_to_string(&parts);
+            let line_without_next = parse_parts_to_string(&parts_clone);
+            let line_without_previous = parse_parts_to_string(&parts_clone2);
+
+            let result1 = report_is_valid(&line_without_current);
+            let result2 = report_is_valid(&line_without_next);
+            let result3 = report_is_valid(&line_without_previous);
+
+            return result1 || result2 || result3;
         }
     }
+
     true
 }
 
 fn validate_decreasing_using_problem_dampener(mut parts: Vec<i32>) -> bool {
-    let mut iter = parts.iter();
-    if let Some(mut previous_number) = iter.next() {
-        for (index, number) in iter.enumerate() {
-            if number >= previous_number || previous_number - number > 3 {
-                parts.remove(index + 1);
-                let line = parse_parts_to_string(parts);
-                return report_is_valid(&line);
-            }
-            previous_number = number;
+    for i in 1..=parts.len() - 2 {
+        let previous_number = parts[i - 1];
+        let number = parts[i];
+        let next_number = parts[i + 1];
+
+        if (number >= previous_number || previous_number - number > 3)
+            || (next_number >= number || next_number - number > 3)
+        {
+            let mut parts_clone = parts.clone();
+            let mut parts_clone2 = parts.clone();
+            parts.remove(i);
+            parts_clone.remove(i + 1);
+            parts_clone2.remove(i - 1);
+            let line_without_current = parse_parts_to_string(&parts);
+            let line_without_next = parse_parts_to_string(&parts_clone);
+            let line_without_previous = parse_parts_to_string(&parts_clone2);
+
+            let result1 = report_is_valid(&line_without_current);
+            let result2 = report_is_valid(&line_without_next);
+            let result3 = report_is_valid(&line_without_previous);
+
+            return result1 || result2 || result3;
         }
     }
+
     true
 }
 
-fn parse_parts_to_string(parts: Vec<i32>) -> String {
+fn parse_parts_to_string(parts: &Vec<i32>) -> String {
     parts
         .iter()
         .map(|&num| num.to_string())
@@ -176,12 +204,12 @@ mod tests {
             ),
         ];
 
-        for (line, expected, reason) in cases {
+        for (line_without_current, expected, reason) in cases {
             assert_eq!(
-                report_is_valid(line),
+                report_is_valid(line_without_current),
                 expected,
                 "Failed on input '{}': {}",
-                line,
+                line_without_current,
                 reason
             );
         }
@@ -194,8 +222,11 @@ mod tests {
 
     #[test]
     fn test_report_is_valid_using_problem_dampener() {
-        let line = "1 3 2 4 5";
-        assert_eq!(report_is_valid_using_problem_dampener(line), true);
+        let line_without_current = "1 3 2 4 5";
+        assert_eq!(
+            report_is_valid_using_problem_dampener(line_without_current),
+            true
+        );
     }
 
     #[test]
@@ -211,11 +242,7 @@ mod tests {
                 false,
                 "Unsafe because 2 7 is an increase of 5.",
             ),
-            (
-                "9 7 6 2 1", 
-                false, 
-                "Unsafe because 6 2 is a decrease of 4."
-            ),
+            ("9 7 6 2 1", false, "Unsafe because 6 2 is a decrease of 4."),
             (
                 "1 3 2 4 5",
                 true,
@@ -233,15 +260,42 @@ mod tests {
             ),
         ];
 
-        for (line, expected, reason) in cases {
+        for (line_without_current, expected, reason) in cases {
             assert_eq!(
-                report_is_valid_using_problem_dampener(line),
+                report_is_valid_using_problem_dampener(line_without_current),
                 expected,
                 "Failed on input '{}': {}",
-                line,
+                line_without_current,
                 reason
             );
         }
+    }
+
+    #[test]
+    fn test_line_part2() {
+        let line = "21 24 21 19 17 14";
+        assert_eq!(
+            report_is_valid_using_problem_dampener(line),
+            true
+        );
+
+        let line = "30 32 29 27 25 20";
+        assert_eq!(
+            report_is_valid_using_problem_dampener(line),
+            false
+        );
+
+        let line = "80 80 78 75 74 72 69 71";
+        assert_eq!(
+            report_is_valid_using_problem_dampener(line),
+            false
+        );
+
+        let line = "45 45 44 42 40 38 41 41";
+        assert_eq!(
+            report_is_valid_using_problem_dampener(line),
+            false
+        );
     }
 
     #[test]
