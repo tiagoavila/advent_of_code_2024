@@ -7,7 +7,7 @@ use std::{
 fn main() {
     println!("Advent of Code 2024 - Day 03");
     println!("Part 1: {}", part1("challenge.txt"));
-    // println!("Part 2: {}", part2("challenge_input.txt"));
+    println!("Part 2: {}", part2("challenge.txt"));
 }
 
 fn part1(input_path: &str) -> i32 {
@@ -27,6 +27,35 @@ fn part1(input_path: &str) -> i32 {
         .sum()
 }
 
+fn part2(input_path: &str) -> i32 {
+    let input = read_file(input_path).unwrap();
+    let pattern = r"(mul\(\d+,\d+\)|do\(\)|don't\(\))"; // Regex pattern
+
+    // Create regex object
+    let re = Regex::new(pattern).expect("Invalid regex pattern");
+    let mut matches: Vec<&str> = re.find_iter(&input).map(|m| m.as_str()).collect();
+
+    let mut mul_enabled = true;
+    let mut sum = 0;
+    for item in matches.iter_mut() {
+        if mul_enabled {
+            if item.contains("mul") {
+                let result = item.replace("mul(", "").replace(")", "");
+                let (x, y) = result.split_once(",").unwrap();
+                sum += x.parse::<i32>().unwrap_or(0) * y.parse::<i32>().unwrap_or(0);
+            } else if *item == "don't()" {
+                mul_enabled = false;
+            }
+        }
+
+        if *item == "do()" {
+            mul_enabled = true;
+        }
+    }
+     
+    sum
+}
+
 fn read_file(file_path: &str) -> io::Result<String> {
     // Open the file
     let file = File::open(file_path)?;
@@ -44,5 +73,10 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1("example.txt"), 161);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2("example2.txt"), 48);
     }
 }
