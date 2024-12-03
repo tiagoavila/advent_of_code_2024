@@ -1,0 +1,48 @@
+use regex::Regex;
+use std::{
+    fs::File,
+    io::{self, BufRead},
+};
+
+fn main() {
+    println!("Advent of Code 2024 - Day 03");
+    println!("Part 1: {}", part1("challenge.txt"));
+    // println!("Part 2: {}", part2("challenge_input.txt"));
+}
+
+fn part1(input_path: &str) -> i32 {
+    let input = read_file(input_path).unwrap();
+    let pattern = r"mul\(\d+,\d+\)"; // Regex pattern
+
+    // Create regex object
+    let re = Regex::new(pattern).expect("Invalid regex pattern");
+
+    // Find all matches
+    re.find_iter(&input)
+        .map(|m| {
+            let result = m.as_str().replace("mul(", "").replace(")", "");
+            let (x, y) = result.split_once(",").unwrap();
+            x.parse::<i32>().unwrap_or(0) * y.parse::<i32>().unwrap_or(0)
+        })
+        .sum()
+}
+
+fn read_file(file_path: &str) -> io::Result<String> {
+    // Open the file
+    let file = File::open(file_path)?;
+    let reader = io::BufReader::new(file);
+
+    // Collect the lines into a vector
+    let lines: Vec<String> = reader.lines().filter_map(Result::ok).collect();
+    Ok(lines[0].to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1("example.txt"), 161);
+    }
+}
