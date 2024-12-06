@@ -9,6 +9,7 @@ use graph::prelude::*;
 fn main() {
     println!("Advent of Code 2024 - Day 05");
     println!("Part 1: {}", part1("challenge.txt"));
+    println!("Part 1 using is_sorted_by: {}", part1_using_is_sorted_by("challenge.txt"));
     println!("Part 2: {}", part2("challenge.txt"));
 }
 
@@ -29,6 +30,30 @@ fn part1(file_path: &str) -> i32 {
         .sum()
 }
 
+fn part1_using_is_sorted_by(file_path: &str) -> i32 {
+    let file = read_file(file_path).unwrap();
+    let (page_ordering_rules, pages_to_produce) = split_input(file);
+    let page_ordering_rules = parse_page_ordering_rules_to_list_of_tuples(page_ordering_rules);
+    let pages_to_produce = parse_pages_to_produce_vec_of_vec(pages_to_produce);
+    pages_to_produce
+        .iter()
+        .filter_map(|page| {
+            let is_sorted_using_rules = page.iter().is_sorted_by(|a, b| {
+                page_ordering_rules
+                    .iter()
+                    .find(|(x, y)| **a == *x && **b == *y)
+                    .is_some()
+            });
+
+            if is_sorted_using_rules {
+                Some(get_middle_element(page))
+            } else {
+                None
+            }
+        })
+        .sum()
+}
+
 fn part2(file_path: &str) -> i32 {
     let file = read_file(file_path).unwrap();
     let (page_ordering_rules, pages_to_produce) = split_input(file);
@@ -38,7 +63,6 @@ fn part2(file_path: &str) -> i32 {
         .iter()
         .filter_map(|x| {
             if !validate_line(x, &page_ordering_rules) {
-                println!("Invalid line: {:?}", x);
                 let fixed_line = fix_invalid_line(x, &page_ordering_rules);
                 Some(get_middle_element(&fixed_line))
             } else {
@@ -367,5 +391,10 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(part2("test.txt"), 123);
+    }
+
+    #[test]
+    fn test_part1_using_is_sorted_by() {
+        assert_eq!(part1_using_is_sorted_by("test.txt"), 143);
     }
 }
