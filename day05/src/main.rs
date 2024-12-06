@@ -17,22 +17,33 @@ fn part1(file_path: &str) -> i32 {
     let pages_to_produce = parse_pages_to_produce_vec_of_vec(pages_to_produce);
     pages_to_produce
         .iter()
-        .filter(|x| validate_line(x, &page_ordering_rules))
-        .collect::<Vec<&Vec<i32>>>()
-        .iter()
-        .map(|x| get_middle_element(x))
+        .filter_map(|x| {
+            if validate_line(x, &page_ordering_rules) {
+                Some(get_middle_element(x))
+            } else {
+                None
+            }
+        })
         .sum()
 }
 
-fn get_middle_element(vec: &Vec<i32>) -> i32 {
-    let mid_index = vec.len() / 2;
-    
-    // If you want the "lower" middle in case of an even-length vector
-    vec[mid_index]
-}
-
 fn part2(file_path: &str) -> i32 {
-    0
+    let file = read_file(file_path).unwrap();
+    let (page_ordering_rules, pages_to_produce) = split_input(file);
+    let page_ordering_rules = parse_page_ordering_rules_to_list_of_tuples(page_ordering_rules);
+    let pages_to_produce = parse_pages_to_produce_vec_of_vec(pages_to_produce);
+    pages_to_produce
+        .iter()
+        .filter_map(|x| {
+            if !validate_line(x, &page_ordering_rules) {
+                println!("Invalid line: {:?}", x);
+                let fixed_line = fix_invalid_line(x, &page_ordering_rules);
+                Some(get_middle_element(&fixed_line))
+            } else {
+                None
+            }
+        })
+        .sum()
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
@@ -116,6 +127,32 @@ fn validate_line(page_line: &Vec<i32>, page_ordering_rules: &Vec<(i32, i32)>) ->
     valid
 }
 
+fn get_middle_element(vec: &Vec<i32>) -> i32 {
+    let mid_index = vec.len() / 2;
+
+    // If you want the "lower" middle in case of an even-length vector
+    vec[mid_index]
+}
+
+fn fix_invalid_line(page_line: &Vec<i32>, page_ordering_rules: &Vec<(i32, i32)>) -> Vec<i32> {
+    let mut new_page_line = page_line.clone();
+    let applicable_rules = find_applicable_rules_by_page_line(&page_line, page_ordering_rules);
+    let mut valid = false;
+
+    while !valid {
+        for rule in &applicable_rules {
+            let index_first_page = page_line.iter().position(|&x| x == rule.0).unwrap();
+            let index_second_page = page_line.iter().position(|&x| x == rule.1).unwrap();
+            if index_first_page > index_second_page {
+                new_page_line.swap(index_first_page, index_second_page);
+            }
+        }
+        valid = validate_line(&new_page_line, page_ordering_rules);
+    }
+
+    new_page_line
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,7 +189,18 @@ mod tests {
             (53, 13),
         ];
         let applicable_rules = find_applicable_rules_by_page_line(&page_line, &page_ordering_rules);
-        let expected_rules = vec![(47, 53), (75, 29), (75, 53), (53, 29), (61, 53), (61, 29), (75, 47), (47, 61), (75, 61), (47, 29)];
+        let expected_rules = vec![
+            (47, 53),
+            (75, 29),
+            (75, 53),
+            (53, 29),
+            (61, 53),
+            (61, 29),
+            (75, 47),
+            (47, 61),
+            (75, 61),
+            (47, 29),
+        ];
         assert!(applicable_rules.len() == expected_rules.len());
         assert!(applicable_rules == expected_rules);
     }
@@ -214,8 +262,67 @@ mod tests {
         ];
         assert_eq!(validate_line(&page_line, &page_ordering_rules), false);
     }
-    // #[test]
-    // fn test_part2() {
-    //     assert_eq!(part2("test.txt"), 0);
-    // }
+
+    #[test]
+    fn test_fix_invalid_line() {
+        let page_ordering_rules = vec![
+            (47, 53),
+            (97, 13),
+            (97, 61),
+            (97, 47),
+            (75, 29),
+            (61, 13),
+            (75, 53),
+            (29, 13),
+            (97, 29),
+            (53, 29),
+            (61, 53),
+            (97, 53),
+            (61, 29),
+            (47, 13),
+            (75, 47),
+            (97, 75),
+            (47, 61),
+            (75, 61),
+            (47, 29),
+            (75, 13),
+            (53, 13),
+        ];
+
+        let page_line = parse_page_line_to_vector(&"75,97,47,61,53".to_string());
+        let expected_fixed_page_line = vec![97, 75, 47, 61, 53];
+        assert_eq!(
+            fix_invalid_line(&page_line, &page_ordering_rules),
+            expected_fixed_page_line
+        );
+
+        let page_line = parse_page_line_to_vector(&"61,13,29".to_string());
+        let expected_fixed_page_line = vec![61, 29, 13];
+        assert_eq!(
+            fix_invalid_line(&page_line, &page_ordering_rules),
+            expected_fixed_page_line
+        );
+
+        let page_line = parse_page_line_to_vector(&"97,13,75,29,47".to_string());
+        let expected_fixed_page_line = vec![97, 75, 47, 29, 13];
+        assert_eq!(
+            fix_invalid_line(&page_line, &page_ordering_rules),
+            expected_fixed_page_line
+        );
+    }
+
+    #[test]
+    fn test_fix_invalid_line_from_challenge() {
+        let file = read_file("challenge.txt").unwrap();
+        let (page_ordering_rules, _) = split_input(file);
+        let page_ordering_rules = parse_page_ordering_rules_to_list_of_tuples(page_ordering_rules);
+        let page_line = vec![93, 36, 64, 57, 94, 66, 13, 32, 37, 78, 73, 19, 25, 84, 17, 31, 87, 47, 42, 59, 81, 91, 95];
+        let fixed_page_line = fix_invalid_line(&page_line, &page_ordering_rules);
+        assert!(true);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2("test.txt"), 123);
+    }
 }
