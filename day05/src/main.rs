@@ -1,8 +1,10 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
     io::{self, BufRead},
 };
+
+use graph::prelude::*;
 
 fn main() {
     println!("Advent of Code 2024 - Day 05");
@@ -135,19 +137,65 @@ fn get_middle_element(vec: &Vec<i32>) -> i32 {
 }
 
 fn fix_invalid_line(page_line: &Vec<i32>, page_ordering_rules: &Vec<(i32, i32)>) -> Vec<i32> {
-    let mut new_page_line = page_line.clone();
     let applicable_rules = find_applicable_rules_by_page_line(&page_line, page_ordering_rules);
-    let mut valid = false;
 
-    while !valid {
-        for rule in &applicable_rules {
-            let index_first_page = page_line.iter().position(|&x| x == rule.0).unwrap();
-            let index_second_page = page_line.iter().position(|&x| x == rule.1).unwrap();
-            if index_first_page > index_second_page {
-                new_page_line.swap(index_first_page, index_second_page);
+    let graph: DirectedCsrGraph<i32> = GraphBuilder::new()
+        .csr_layout(CsrLayout::Sorted)
+        .edges(applicable_rules.iter().cloned())
+        .build();
+
+    let mut vertexes_with_in_degree_zero: Vec<i32> = Vec::new();
+    let mut graph_hashmap: HashMap<i32, i32> = HashMap::new();
+
+    for rule in applicable_rules
+        .iter()
+        .flat_map(|(x, y)| vec![*x, *y])
+        .collect::<HashSet<_>>()
+    {
+        if graph.in_degree(rule) == 0 {
+            vertexes_with_in_degree_zero.push(rule);
+        } else {
+            graph_hashmap.insert(rule, graph.in_degree(rule));
+        }
+    }
+
+    let mut sorted_vertexes: Vec<i32> = Vec::with_capacity(graph_hashmap.len());
+
+    while vertexes_with_in_degree_zero.len() > 0 {
+        let current_vertex = vertexes_with_in_degree_zero.remove(0);
+        sorted_vertexes.push(current_vertex);
+
+        let adjacent_vertexes = graph
+            .out_neighbors(current_vertex)
+            .cloned()
+            .collect::<Vec<i32>>();
+
+        for adjacent_vertex in adjacent_vertexes {
+            if let Some(in_degree) = graph_hashmap.get_mut(&adjacent_vertex) {
+                *in_degree -= 1;
+                if *in_degree == 0 {
+                    vertexes_with_in_degree_zero.push(adjacent_vertex);
+                }
             }
         }
-        valid = validate_line(&new_page_line, page_ordering_rules);
+    }
+
+    // while !valid {
+    //     for rule in &applicable_rules {
+    //         let index_first_page = page_line.iter().position(|&x| x == rule.0).unwrap();
+    //         let index_second_page = page_line.iter().position(|&x| x == rule.1).unwrap();
+    //         if index_first_page > index_second_page {
+    //             new_page_line.swap(index_first_page, index_second_page);
+    //         }
+    //     }
+    //     valid = validate_line(&new_page_line, page_ordering_rules);
+    // }
+
+    let mut new_page_line = Vec::with_capacity(page_line.len());
+    for vertex in sorted_vertexes {
+        if page_line.contains(&vertex) {
+            new_page_line.push(vertex);
+        }
     }
 
     new_page_line
@@ -316,7 +364,10 @@ mod tests {
         let file = read_file("challenge.txt").unwrap();
         let (page_ordering_rules, _) = split_input(file);
         let page_ordering_rules = parse_page_ordering_rules_to_list_of_tuples(page_ordering_rules);
-        let page_line = vec![93, 36, 64, 57, 94, 66, 13, 32, 37, 78, 73, 19, 25, 84, 17, 31, 87, 47, 42, 59, 81, 91, 95];
+        let page_line = vec![
+            93, 36, 64, 57, 94, 66, 13, 32, 37, 78, 73, 19, 25, 84, 17, 31, 87, 47, 42, 59, 81, 91,
+            95,
+        ];
         let fixed_page_line = fix_invalid_line(&page_line, &page_ordering_rules);
         assert!(true);
     }
