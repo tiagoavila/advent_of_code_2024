@@ -137,8 +137,19 @@ fn get_middle_element(vec: &Vec<i32>) -> i32 {
 }
 
 fn fix_invalid_line(page_line: &Vec<i32>, page_ordering_rules: &Vec<(i32, i32)>) -> Vec<i32> {
-    let applicable_rules = find_applicable_rules_by_page_line(&page_line, page_ordering_rules);
+    let applicable_rules = find_applicable_rules_by_page_line(page_line, page_ordering_rules);
+    let sorted_vertexes = topological_sort(applicable_rules);
+    let mut new_page_line = Vec::with_capacity(page_line.len());
+    for vertex in sorted_vertexes {
+        if page_line.contains(&vertex) {
+            new_page_line.push(vertex);
+        }
+    }
 
+    new_page_line
+}
+
+fn topological_sort(applicable_rules: Vec<(i32, i32)>) -> Vec<i32> {
     let graph: DirectedCsrGraph<i32> = GraphBuilder::new()
         .csr_layout(CsrLayout::Sorted)
         .edges(applicable_rules.iter().cloned())
@@ -179,26 +190,7 @@ fn fix_invalid_line(page_line: &Vec<i32>, page_ordering_rules: &Vec<(i32, i32)>)
             }
         }
     }
-
-    // while !valid {
-    //     for rule in &applicable_rules {
-    //         let index_first_page = page_line.iter().position(|&x| x == rule.0).unwrap();
-    //         let index_second_page = page_line.iter().position(|&x| x == rule.1).unwrap();
-    //         if index_first_page > index_second_page {
-    //             new_page_line.swap(index_first_page, index_second_page);
-    //         }
-    //     }
-    //     valid = validate_line(&new_page_line, page_ordering_rules);
-    // }
-
-    let mut new_page_line = Vec::with_capacity(page_line.len());
-    for vertex in sorted_vertexes {
-        if page_line.contains(&vertex) {
-            new_page_line.push(vertex);
-        }
-    }
-
-    new_page_line
+    sorted_vertexes
 }
 
 #[cfg(test)]
