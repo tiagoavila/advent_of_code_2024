@@ -34,109 +34,52 @@ fn part1(file_path: &str) -> usize {
     println!("{:?}", obstructions);
     println!("{:?}", guard_position);
 
+    let mut directions = HashMap::new();
+    directions.insert('^', (-1, 0));
+    directions.insert('>', (0, 1));
+    directions.insert('v', (1, 0));
+    directions.insert('<', (0, -1));
+
     let mut visited: HashSet<(usize, usize)> = HashSet::new();
+    visited.insert(guard_position);
     let mut guard_left_area: bool = false;
     let mut guard_directions = ['^', '>', 'v', '<'].iter().cycle();
     while !guard_left_area {
         let guard_direction = guard_directions.next().unwrap();
-        let obstruction = obstructions
-            .iter()
-            .find(|(row, col)| match guard_direction {
-                '^' => {
-                    return *row < guard_position.0 && *col == guard_position.1;
-                }
-                'v' => {
-                    return *row > guard_position.0 && *col == guard_position.1;
-                }
-                '<' => {
-                    return *row == guard_position.0 && *col < guard_position.1;
-                }
-                '>' => {
-                    return *row == guard_position.0 && *col > guard_position.1;
-                }
-                _ => {
-                    return false;
-                }
-            });
+        let (row_dir, col_dir) = directions.get(&guard_direction).unwrap();
+        let mut row = guard_position.0 as i32;
+        let mut col = guard_position.1 as i32;
 
-        match obstruction {
-            Some((row, col)) => match guard_direction {
-                '^' => {
-                    insert_visited_in_up_or_down(
-                        &(*row + 1),
-                        &guard_position.0,
-                        guard_position,
-                        &mut visited,
-                    );
-                    guard_position.0 = *row + 1;
-                }
-                'v' => {
-                    insert_visited_in_up_or_down(
-                        &guard_position.0,
-                        &(*row - 1),
-                        guard_position,
-                        &mut visited,
-                    );
-                    guard_position.0 = *row - 1;
-                }
-                '<' => {
-                    insert_visited_in_left_or_right(
-                        &(*col + 1),
-                        &guard_position.1,
-                        guard_position,
-                        &mut visited,
-                    );
-                    guard_position.1 = *col + 1;
-                }
-                '>' => {
-                    insert_visited_in_left_or_right(
-                        &guard_position.1,
-                        &(*col - 1),
-                        guard_position,
-                        &mut visited,
-                    );
-                    guard_position.1 = *col - 1;
-                }
-                _ => {}
-            },
-            None => {
+        loop {
+            row += row_dir;
+            col += col_dir;
+
+            if obstructions.contains(&(row as usize, col as usize)) {
                 match guard_direction {
                     '^' => {
-                        insert_visited_in_up_or_down(
-                            &0,
-                            &guard_position.0,
-                            guard_position,
-                            &mut visited,
-                        );
+                        guard_position.0 = row as usize + 1;
                     }
                     'v' => {
-                        insert_visited_in_up_or_down(
-                            &guard_position.0,
-                            &(row_count - 1),
-                            guard_position,
-                            &mut visited,
-                        );
+                        guard_position.0 = row as usize - 1;
                     }
                     '<' => {
-                        insert_visited_in_left_or_right(
-                            &0,
-                            &guard_position.1,
-                            guard_position,
-                            &mut visited,
-                        );
+                        guard_position.1 = col as usize + 1;
                     }
                     '>' => {
-                        insert_visited_in_left_or_right(
-                            &guard_position.1,
-                            &(col_count - 1),
-                            guard_position,
-                            &mut visited,
-                        );
+                        guard_position.1 = col as usize - 1;
                     }
                     _ => {}
                 }
-                guard_left_area = true;
+                println!("{:?}", guard_position);
+                break;
             }
+
+            if row < 0 && *guard_direction == '^' || row >= row_count as i32 && *guard_direction == 'v' || col < 0 && *guard_direction == '<' || col >= col_count as i32 && *guard_direction == '>' {
+                guard_left_area = true;
+                break;
+            }
+
+            visited.insert((row as usize, col as usize));
         }
     }
 
