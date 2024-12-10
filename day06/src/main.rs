@@ -13,27 +13,16 @@ fn main() {
 
 fn part1(file_path: &str) -> usize {
     let lines = read_file(file_path).unwrap();
-    let mut obstructions = Vec::new();
-    let mut guard_position: (usize, usize) = (0, 0);
     let row_count = lines.len();
     let col_count = lines[0].len();
-    for (i, line) in lines.iter().enumerate() {
-        for (j, c) in line.chars().enumerate() {
-            match c {
-                '#' => {
-                    obstructions.push((i, j));
-                }
-                '^' => {
-                    guard_position = (i, j);
-                }
-                _ => {}
-            }
-        }
-    }
+    let (obstructions, mut guard_position) = get_obstructions_and_guard_position(lines);
 
-    println!("{:?}", obstructions);
-    println!("{:?}", guard_position);
+    let visited = traverse_until_left_area(row_count, col_count, &obstructions, &mut guard_position);
 
+    visited.len()
+}
+
+fn traverse_until_left_area(row_count: usize, col_count: usize, obstructions: &Vec<(usize, usize)>, guard_position: &mut (usize, usize)) -> HashSet<(usize, usize)> {
     let mut directions = HashMap::new();
     directions.insert('^', (-1, 0));
     directions.insert('>', (0, 1));
@@ -41,7 +30,7 @@ fn part1(file_path: &str) -> usize {
     directions.insert('<', (0, -1));
 
     let mut visited: HashSet<(usize, usize)> = HashSet::new();
-    visited.insert(guard_position);
+    visited.insert(*guard_position);
     let mut guard_left_area: bool = false;
     let mut guard_directions = ['^', '>', 'v', '<'].iter().cycle();
     while !guard_left_area {
@@ -74,7 +63,11 @@ fn part1(file_path: &str) -> usize {
                 break;
             }
 
-            if row < 0 && *guard_direction == '^' || row >= row_count as i32 && *guard_direction == 'v' || col < 0 && *guard_direction == '<' || col >= col_count as i32 && *guard_direction == '>' {
+            if row < 0 && *guard_direction == '^'
+                || row >= row_count as i32 && *guard_direction == 'v'
+                || col < 0 && *guard_direction == '<'
+                || col >= col_count as i32 && *guard_direction == '>'
+            {
                 guard_left_area = true;
                 break;
             }
@@ -82,30 +75,28 @@ fn part1(file_path: &str) -> usize {
             visited.insert((row as usize, col as usize));
         }
     }
-
-    visited.len()
+    visited
 }
 
-fn insert_visited_in_up_or_down(
-    start: &usize,
-    end: &usize,
-    guard_position: (usize, usize),
-    visited: &mut HashSet<(usize, usize)>,
-) {
-    for guard_row in *start..=*end {
-        visited.insert((guard_row, guard_position.1));
-    }
-}
+fn get_obstructions_and_guard_position(lines: Vec<String>) -> (Vec<(usize, usize)>, (usize, usize)) {
+    let mut obstructions: Vec<(usize, usize)> = Vec::new();	
+    let mut guard_position: (usize, usize) = (0, 0);
 
-fn insert_visited_in_left_or_right(
-    start: &usize,
-    end: &usize,
-    guard_position: (usize, usize),
-    visited: &mut HashSet<(usize, usize)>,
-) {
-    for guard_col in *start..=*end {
-        visited.insert((guard_position.0, guard_col));
+    for (i, line) in lines.iter().enumerate() {
+        for (j, c) in line.chars().enumerate() {
+            match c {
+                '#' => {
+                    obstructions.push((i, j));
+                }
+                '^' => {
+                    guard_position = (i, j);
+                }
+                _ => {}
+            }
+        }
     }
+    
+    return (obstructions, guard_position);
 }
 
 fn part2(file_path: &str) -> i32 {
