@@ -11,25 +11,35 @@ fn main() {
     println!("Part 2: {}", part2("challenge.txt"));
 }
 
-fn part1(file_path: &str) -> usize {
+fn part1(file_path: &str) -> i32 {
     let lines = read_file(file_path).unwrap();
     let row_count = lines.len();
     let col_count = lines[0].len();
     let (obstructions, mut guard_position) = get_obstructions_and_guard_position(lines);
 
-    let visited = traverse_until_left_area(row_count, col_count, &obstructions, &mut guard_position);
+    let visited = traverse_until_left_area(
+        row_count as i32,
+        col_count as i32,
+        &obstructions,
+        &mut guard_position,
+    );
 
-    visited.len()
+    visited.len() as i32
 }
 
-fn traverse_until_left_area(row_count: usize, col_count: usize, obstructions: &Vec<(usize, usize)>, guard_position: &mut (usize, usize)) -> HashSet<(usize, usize)> {
+fn traverse_until_left_area(
+    row_count: i32,
+    col_count: i32,
+    obstructions: &Vec<(i32, i32)>,
+    guard_position: &mut (i32, i32),
+) -> HashSet<(i32, i32)> {
     let mut directions = HashMap::new();
     directions.insert('^', (-1, 0));
     directions.insert('>', (0, 1));
     directions.insert('v', (1, 0));
     directions.insert('<', (0, -1));
 
-    let mut visited: HashSet<(usize, usize)> = HashSet::new();
+    let mut visited: HashSet<(i32, i32)> = HashSet::new();
     visited.insert(*guard_position);
     let mut guard_left_area: bool = false;
     let mut guard_directions = ['^', '>', 'v', '<'].iter().cycle();
@@ -43,19 +53,19 @@ fn traverse_until_left_area(row_count: usize, col_count: usize, obstructions: &V
             row += row_dir;
             col += col_dir;
 
-            if obstructions.contains(&(row as usize, col as usize)) {
+            if obstructions.contains(&(row as i32, col as i32)) {
                 match guard_direction {
                     '^' => {
-                        guard_position.0 = row as usize + 1;
+                        guard_position.0 = row as i32 + 1;
                     }
                     'v' => {
-                        guard_position.0 = row as usize - 1;
+                        guard_position.0 = row as i32 - 1;
                     }
                     '<' => {
-                        guard_position.1 = col as usize + 1;
+                        guard_position.1 = col as i32 + 1;
                     }
                     '>' => {
-                        guard_position.1 = col as usize - 1;
+                        guard_position.1 = col as i32 - 1;
                     }
                     _ => {}
                 }
@@ -72,30 +82,30 @@ fn traverse_until_left_area(row_count: usize, col_count: usize, obstructions: &V
                 break;
             }
 
-            visited.insert((row as usize, col as usize));
+            visited.insert((row as i32, col as i32));
         }
     }
     visited
 }
 
-fn get_obstructions_and_guard_position(lines: Vec<String>) -> (Vec<(usize, usize)>, (usize, usize)) {
-    let mut obstructions: Vec<(usize, usize)> = Vec::new();	
-    let mut guard_position: (usize, usize) = (0, 0);
+fn get_obstructions_and_guard_position(lines: Vec<String>) -> (Vec<(i32, i32)>, (i32, i32)) {
+    let mut obstructions: Vec<(i32, i32)> = Vec::new();
+    let mut guard_position: (i32, i32) = (0, 0);
 
     for (i, line) in lines.iter().enumerate() {
         for (j, c) in line.chars().enumerate() {
             match c {
                 '#' => {
-                    obstructions.push((i, j));
+                    obstructions.push((i as i32, j as i32));
                 }
                 '^' => {
-                    guard_position = (i, j);
+                    guard_position = (i as i32, j as i32);
                 }
                 _ => {}
             }
         }
     }
-    
+
     return (obstructions, guard_position);
 }
 
@@ -104,57 +114,38 @@ fn part2(file_path: &str) -> i32 {
     let row_count = lines.len();
     let col_count = lines[0].len();
     let (obstructions, mut guard_position) = get_obstructions_and_guard_position(lines);
-    let visited = traverse_until_left_area_part2(row_count, col_count, &obstructions, &mut guard_position);
+    let loops = traverse_until_left_area_part2(
+        row_count as i32,
+        col_count as i32,
+        &obstructions,
+        &mut guard_position,
+    );
 
-    // println!("{:?}", visited);
-    let mut next_direction = HashMap::new();
-    next_direction.insert('^', ('>', 0, 1));
-    next_direction.insert('>', ('v', 1, 0));
-    next_direction.insert('v', ('<', 0, -1));
-    next_direction.insert('<', ('^', -1, 0));
-
-    let mut loops_count: HashSet<(char, usize, usize)> = HashSet::new();
-    let visited_clone = visited.clone();
-
-    for (direction, row, col) in visited {
-        println!("{:?}", (direction, row, col));
-        let (next_dir, row_dir, col_dir) = next_direction.get(&direction).unwrap();
-        match next_dir {
-            '^' => {
-                if let Some((d, r, c)) = visited_clone.iter().find(|(d, r, c)| *d == *next_dir && *r < row && *c == col) {
-                    loops_count.insert((*next_dir, *r, *c));
-                }
-            }
-            'v' => {
-                if let Some((d, r, c)) = visited_clone.iter().find(|(d, r, c)| *d == *next_dir && *r > row && *c == col) {
-                    loops_count.insert((*next_dir, *r, *c));
-                }
-            }
-            '<' => {
-                if let Some((d, r, c)) = visited_clone.iter().find(|(d, r, c)| *d == *next_dir && *r == row && *c < col) {
-                    loops_count.insert((*next_dir, *r, *c));
-                }
-            }
-            '>' => {
-                if let Some((d, r, c)) = visited_clone.iter().find(|(d, r, c)| *d == *next_dir && *r == row && *c < col) {
-                    loops_count.insert((*next_dir, *r, *c));
-                }
-            }
-            _ => {}
-        }
-    }
-
-    loops_count.len() as i32
+    println!("{:?}", loops);
+    loops as i32
 }
 
-fn traverse_until_left_area_part2(row_count: usize, col_count: usize, obstructions: &Vec<(usize, usize)>, guard_position: &mut (usize, usize)) -> HashSet<(char, usize, usize)> {
-    let mut directions = HashMap::new();
+fn traverse_until_left_area_part2(
+    row_count: i32,
+    col_count: i32,
+    obstructions: &Vec<(i32, i32)>,
+    guard_position: &mut (i32, i32),
+) -> usize {
+    let mut directions: HashMap<char, (i32, i32)> = HashMap::new();
     directions.insert('^', (-1, 0));
     directions.insert('>', (0, 1));
     directions.insert('v', (1, 0));
     directions.insert('<', (0, -1));
 
-    let mut visited: HashSet<(char, usize, usize)> = HashSet::new();
+    let mut next_directions = HashMap::new();
+    next_directions.insert('^', '>');
+    next_directions.insert('>', 'v');
+    next_directions.insert('v', '<');
+    next_directions.insert('<', '^');
+
+    let mut visited: HashSet<(char, i32, i32)> = HashSet::new();
+    let mut loops: HashSet<(char, i32, i32)> = HashSet::new();
+
     let (guard_row, guard_col) = guard_position;
     visited.insert(('^', *guard_row, *guard_col));
 
@@ -163,46 +154,84 @@ fn traverse_until_left_area_part2(row_count: usize, col_count: usize, obstructio
     while !guard_left_area {
         let guard_direction = guard_directions.next().unwrap();
         let (row_dir, col_dir) = directions.get(&guard_direction).unwrap();
-        let mut row = guard_position.0 as i32;
-        let mut col = guard_position.1 as i32;
+        let mut row = guard_position.0;
+        let mut col = guard_position.1;
+
+        let next_direction = next_directions.get(&guard_direction).unwrap();
 
         loop {
             row += row_dir;
             col += col_dir;
 
-            if obstructions.contains(&(row as usize, col as usize)) {
+            if obstructions.contains(&(row as i32, col as i32)) {
                 match guard_direction {
                     '^' => {
-                        guard_position.0 = row as usize + 1;
+                        guard_position.0 = row as i32 + 1;
                     }
                     'v' => {
-                        guard_position.0 = row as usize - 1;
+                        guard_position.0 = row as i32 - 1;
                     }
                     '<' => {
-                        guard_position.1 = col as usize + 1;
+                        guard_position.1 = col as i32 + 1;
                     }
                     '>' => {
-                        guard_position.1 = col as usize - 1;
+                        guard_position.1 = col as i32 - 1;
                     }
                     _ => {}
                 }
-                // println!("{:?}", guard_position);
                 break;
+            } else {
+                match next_direction {
+                    '^' => {
+                        if let Some((d, r, c)) = visited
+                            .iter()
+                            .find(|(d, r, c)| *d == *next_direction && *r < row && *c == col)
+                        {
+                            loops.insert((*guard_direction, row, col));
+                        }
+                    }
+                    'v' => {
+                        if let Some((d, r, c)) = visited
+                            .iter()
+                            .find(|(d, r, c)| *d == *next_direction && *r > row && *c == col)
+                        {
+                            loops.insert((*guard_direction, row, col));
+                        }
+                    }
+                    '<' => {
+                        if let Some((d, r, c)) = visited
+                            .iter()
+                            .find(|(d, r, c)| *d == *next_direction && *r == row && *c < col)
+                        {
+                            loops.insert((*guard_direction, row, col));
+                        }
+                    }
+                    '>' => {
+                        if let Some((d, r, c)) = visited
+                            .iter()
+                            .find(|(d, r, c)| *d == *next_direction && *r == row && *c > col)
+                        {
+                            loops.insert((*guard_direction, row, col));
+                        }
+                    }
+                    _ => {}
+                }
             }
 
             if row < 0 && *guard_direction == '^'
-                || row >= row_count as i32 && *guard_direction == 'v'
+                || row >= row_count && *guard_direction == 'v'
                 || col < 0 && *guard_direction == '<'
-                || col >= col_count as i32 && *guard_direction == '>'
+                || col >= col_count && *guard_direction == '>'
             {
                 guard_left_area = true;
                 break;
             }
 
-            visited.insert((*guard_direction, row as usize, col as usize));
+            visited.insert((*guard_direction, row as i32, col as i32));
         }
     }
-    visited
+
+    loops.len()
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
