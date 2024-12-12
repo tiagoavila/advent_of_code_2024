@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fs::File,
+    hash::Hash,
     io::{self, BufRead},
     ptr::read,
 };
@@ -109,61 +110,54 @@ fn get_obstructions_and_guard_position(lines: Vec<String>) -> (Vec<(i32, i32)>, 
     return (obstructions, guard_position);
 }
 
-fn part2(file_path: &str) -> i32 {
+fn part2(file_path: &str) -> u32 {
     let lines = read_file(file_path).unwrap();
     let row_count = lines.len();
     let col_count = lines[0].len();
     let (obstructions, mut guard_position) = get_obstructions_and_guard_position(lines);
-    let loops = traverse_until_left_area_part2(
+    let initial_guard_position = guard_position;
+    let visited = traverse_until_left_area(
         row_count as i32,
         col_count as i32,
         &obstructions,
         &mut guard_position,
     );
 
-    println!("{:?}", loops);
-    loops as i32
-}
-
-fn traverse_until_left_area_part2(
-    row_count: i32,
-    col_count: i32,
-    obstructions: &Vec<(i32, i32)>,
-    guard_position: &mut (i32, i32),
-) -> usize {
     let mut directions: HashMap<char, (i32, i32)> = HashMap::new();
     directions.insert('^', (-1, 0));
     directions.insert('>', (0, 1));
     directions.insert('v', (1, 0));
     directions.insert('<', (0, -1));
 
-    let mut next_directions = HashMap::new();
-    next_directions.insert('^', '>');
-    next_directions.insert('>', 'v');
-    next_directions.insert('v', '<');
-    next_directions.insert('<', '^');
+    let row_count = row_count as i32;
+    let col_count = col_count as i32;
+    let mut loops_count: u32 = 0;
 
-    let mut visited: HashSet<(char, i32, i32)> = HashSet::new();
-    let mut loops: HashSet<(char, i32, i32)> = HashSet::new();
+    for (visited_row, visited_col) in visited {
+        if visited_row == initial_guard_position.0 && visited_col == initial_guard_position.1 {
+            continue;
+        }
 
-    let (guard_row, guard_col) = guard_position;
-    visited.insert(('^', *guard_row, *guard_col));
+        let mut guard_position = initial_guard_position.clone();
+        let mut guard_directions = ['^', '>', 'v', '<'].iter().cycle();
+        let mut guard_direction = guard_directions.next().unwrap();
+        let mut loop_detector: HashSet<(char, i32, i32)> = HashSet::new();
 
-    let mut guard_left_area: bool = false;
-    let mut guard_directions = ['^', '>', 'v', '<'].iter().cycle();
-    while !guard_left_area {
-        let guard_direction = guard_directions.next().unwrap();
-        let (row_dir, col_dir) = directions.get(&guard_direction).unwrap();
-        let mut row = guard_position.0;
-        let mut col = guard_position.1;
+        while guard_position.0 >= 0
+            && guard_position.0 < row_count
+            && guard_position.1 >= 0
+            && guard_position.1 < col_count
+        {
+            let (row_dir, col_dir) = directions.get(&guard_direction).unwrap();
+            let mut row = guard_position.0 as i32;
+            let mut col = guard_position.1 as i32;
 
-        let next_direction = next_directions.get(&guard_direction).unwrap();
-
-        loop {
             row += row_dir;
             col += col_dir;
 
-            if obstructions.contains(&(row as i32, col as i32)) {
+            if obstructions.contains(&(row as i32, col as i32))
+                || (row, col) == (visited_row, visited_col)
+            {
                 match guard_direction {
                     '^' => {
                         guard_position.0 = row as i32 + 1;
@@ -179,59 +173,19 @@ fn traverse_until_left_area_part2(
                     }
                     _ => {}
                 }
-                break;
+                guard_direction = guard_directions.next().unwrap();
             } else {
-                match next_direction {
-                    '^' => {
-                        if let Some((d, r, c)) = visited
-                            .iter()
-                            .find(|(d, r, c)| *d == *next_direction && *r < row && *c == col)
-                        {
-                            loops.insert((*guard_direction, row, col));
-                        }
-                    }
-                    'v' => {
-                        if let Some((d, r, c)) = visited
-                            .iter()
-                            .find(|(d, r, c)| *d == *next_direction && *r > row && *c == col)
-                        {
-                            loops.insert((*guard_direction, row, col));
-                        }
-                    }
-                    '<' => {
-                        if let Some((d, r, c)) = visited
-                            .iter()
-                            .find(|(d, r, c)| *d == *next_direction && *r == row && *c < col)
-                        {
-                            loops.insert((*guard_direction, row, col));
-                        }
-                    }
-                    '>' => {
-                        if let Some((d, r, c)) = visited
-                            .iter()
-                            .find(|(d, r, c)| *d == *next_direction && *r == row && *c > col)
-                        {
-                            loops.insert((*guard_direction, row, col));
-                        }
-                    }
-                    _ => {}
+                guard_position = (row, col);
+
+                if !loop_detector.insert((*guard_direction, row, col)) {
+                    loops_count += 1;
+                    break;
                 }
             }
-
-            if row < 0 && *guard_direction == '^'
-                || row >= row_count && *guard_direction == 'v'
-                || col < 0 && *guard_direction == '<'
-                || col >= col_count && *guard_direction == '>'
-            {
-                guard_left_area = true;
-                break;
-            }
-
-            visited.insert((*guard_direction, row as i32, col as i32));
         }
     }
 
-    loops.len()
+    loops_count
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
@@ -256,5 +210,10 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(part2("test.txt"), 6);
+    }
+
+    #[test]
+    fn test_part2_challenge_input() {
+        assert_eq!(part2("challenge.txt"), 2165);
     }
 }
