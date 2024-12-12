@@ -22,7 +22,7 @@ fn part1(file_path: &str) -> i64 {
                     .trim()
                     .split_whitespace()
                     .map(|operator| operator.parse::<i64>().unwrap())
-                    .collect::<Vec<i64>>()
+                    .collect::<Vec<i64>>(),
             )
         })
         .filter_map(|(total, operators)| {
@@ -45,11 +45,54 @@ fn part1(file_path: &str) -> i64 {
 
             temp_results.iter().any(|&x| x == total).then_some(total)
         })
-       .sum()
+        .sum()
 }
 
 fn part2(file_path: &str) -> i64 {
-    0
+    let lines = read_file(file_path).unwrap();
+    lines
+        .iter()
+        .filter_map(|line| line.split_once(':'))
+        .map(|(total, operators)| {
+            (
+                total.parse::<i64>().unwrap(),
+                operators
+                    .trim()
+                    .split_whitespace()
+                    .map(|operator| operator.parse::<i64>().unwrap())
+                    .collect::<Vec<i64>>(),
+            )
+        })
+        .filter_map(|(total, operators)| {
+            let mut operators_iter = operators.iter();
+            let mut temp_results: Vec<i64> = Vec::new();
+            temp_results.push(*operators_iter.next().unwrap());
+
+            for operator in operators_iter {
+                let mut new_temp_results = Vec::new();
+                for temp_result in temp_results {
+                    if temp_result + operator <= total {
+                        new_temp_results.push(temp_result + operator);
+                    }
+                    if temp_result * operator <= total {
+                        new_temp_results.push(temp_result * operator);
+                    }
+
+                    // Convert numbers to strings
+                    let joined_string = format!("{}{}", temp_result, operator);
+
+                    // Convert the concatenated string back to an integer
+                    let joined_number: i64 = joined_string.parse().unwrap();
+                    if joined_number <= total {
+                        new_temp_results.push(joined_number);
+                    }
+                }
+                temp_results = new_temp_results;
+            }
+
+            temp_results.iter().any(|&x| x == total).then_some(total)
+        })
+        .sum()
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
@@ -73,6 +116,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2("test.txt"), 0);
+        assert_eq!(part2("test.txt"), 11387);
     }
 }
