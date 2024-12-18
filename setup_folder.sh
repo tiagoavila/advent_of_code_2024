@@ -45,7 +45,23 @@ fn read_file(file_path: &str) -> io::Result<Vec<String>> {
     // Collect the lines into a vector
     let lines: Vec<String> = reader.lines().filter_map(Result::ok).collect();
     Ok(lines)
-}"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1("test.txt"), 0);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2("test.txt"), 0);
+    }
+}
+"
 
 # Update or create main.rs in the sub-folder
 echo "$MAIN_RS_CONTENT" > "$SUB_FOLDER/src/main.rs"

@@ -70,7 +70,6 @@ fn traverse_until_left_area(
                     }
                     _ => {}
                 }
-                // println!("{:?}", guard_position);
                 break;
             }
 
