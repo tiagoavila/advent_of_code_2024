@@ -26,11 +26,10 @@ fn part2(file_path: &str) -> i32 {
     0
 }
 
-fn display_blocks(file: String) -> String {
+fn display_blocks(file: String) -> Vec<String> {
     let mut block_id: i32 = 0;
     let mut block_type = BlockType::File;
-    let test = file
-        .chars()
+    file.chars()
         .flat_map(|c| {
             let block_size = c.to_digit(10).unwrap() as usize;
 
@@ -40,16 +39,14 @@ fn display_blocks(file: String) -> String {
                     return repeat_char(String::from("."), block_size);
                 }
                 BlockType::File => {
-                    let file_representation =
-                        repeat_char(block_id.to_string(), block_size);
+                    let file_representation = repeat_char(block_id.to_string(), block_size);
                     block_id += 1;
                     block_type = BlockType::FreeSpace;
                     return file_representation;
                 }
             }
         }) // Repeat each character twice
-        .collect(); // Collect into a single `String`
-    return test;
+        .collect()
 }
 
 fn repeat_char(
@@ -60,37 +57,40 @@ fn repeat_char(
     file_representation
 }
 
-fn switch_characters(input: String) -> String {
-    let mut chars: Vec<char> = input.chars().collect(); // Convert string to mutable Vec<char>
+fn switch_characters(mut input: Vec<String>) -> Vec<String> {
     let mut left = 0;
-    let mut right = chars.len() - 1;
+    let mut right = input.len() - 1;
 
     while left < right {
-        if chars[left] != '.' {
+        if input[left] != "." {
             left += 1;
             continue;
-        }	
+        }
 
-        if chars[right] == '.' {
+        if input[right] == "." {
             right -= 1;
             continue;
         }
 
         // Swap the characters at `left` and `right`
-        chars.swap(left, right);
+        input.swap(left, right);
 
         // Move the pointers inward
         left += 1;
         right -= 1;
     }
 
-    chars.into_iter().collect() // Convert Vec<char> back to String
+    input.into_iter().collect() // Convert Vec<char> back to String
 }
 
-fn calculate_checksum(input: String) -> i128 {
-    input.replace(".", "").chars().enumerate().fold(0, |acc, (i, c)| {
-        acc + (i as i128) * c.to_digit(10).unwrap() as i128
-    })
+fn calculate_checksum(input: Vec<String>) -> i128 {
+    input
+        .into_iter()
+        .filter_map(|block| if block != "." { Some(block) } else { None })
+        .enumerate()
+        .fold(0, |acc, (i, c)| {
+            acc + (i as i128) * c.parse::<i128>().unwrap()
+        })
 }
 
 fn read_file(file_path: &str) -> io::Result<String> {
@@ -121,7 +121,7 @@ mod tests {
     fn test_display_blocks() {
         let input = "2333133121414131402".to_string();
         let expected_output = "00...111...2...333.44.5555.6666.777.888899".to_string();
-        let result = display_blocks(input);
+        let result = display_blocks(input).join("");
         assert_eq!(result, expected_output);
     }
 
@@ -129,31 +129,35 @@ mod tests {
     fn test_display_blocks_simple() {
         let input = "12345".to_string();
         let expected_output = "0..111....22222".to_string();
-        let result = display_blocks(input);
+        let result = display_blocks(input).join("");
         assert_eq!(result, expected_output);
     }
 
     #[test]
     fn test_switch_characters() {
-        let input = "0..111....22222".to_string();
+        let input = "12345".to_string();
         let expected_output = "022111222......".to_string();
-        let result = switch_characters(input);
+        let blocks = display_blocks(input);
+        let result = switch_characters(blocks).join("");
         assert_eq!(result, expected_output);
     }
 
     #[test]
     fn test_switch_characters_complex() {
-        let input = "00...111...2...333.44.5555.6666.777.888899".to_string();
+        let input = "2333133121414131402".to_string();
         let expected_output = "0099811188827773336446555566..............".to_string();
-        let result = switch_characters(input);
+        let blocks = display_blocks(input);
+        let result = switch_characters(blocks).join("");
         assert_eq!(result, expected_output);
     }
 
     #[test]
     fn test_calculate_checksum() {
-        let input = "0099811188827773336446555566..............".to_string();
+        let input = "2333133121414131402".to_string();
         let expected_output = 1928;
-        let result = calculate_checksum(input);
-        assert_eq!(result, expected_output);
+        let blocks = display_blocks(input);
+        let result = switch_characters(blocks);
+        let checksum = calculate_checksum(result);
+        assert_eq!(checksum, expected_output);
     }
 }
