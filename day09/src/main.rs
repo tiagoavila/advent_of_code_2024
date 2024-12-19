@@ -18,7 +18,7 @@ fn main() {
 fn part1(file_path: &str) -> i128 {
     let input = read_file(file_path).unwrap();
     let input = display_blocks(input);
-    let input = switch_characters(input);
+    let input = switch_blocks(input);
     calculate_checksum(input)
 }
 
@@ -57,7 +57,7 @@ fn repeat_char(
     file_representation
 }
 
-fn switch_characters(mut input: Vec<String>) -> Vec<String> {
+fn switch_blocks(mut input: Vec<String>) -> Vec<String> {
     let mut left = 0;
     let mut right = input.len() - 1;
 
@@ -134,20 +134,20 @@ mod tests {
     }
 
     #[test]
-    fn test_switch_characters() {
+    fn test_switch_blocks() {
         let input = "12345".to_string();
         let expected_output = "022111222......".to_string();
         let blocks = display_blocks(input);
-        let result = switch_characters(blocks).join("");
+        let result = switch_blocks(blocks).join("");
         assert_eq!(result, expected_output);
     }
 
     #[test]
-    fn test_switch_characters_complex() {
+    fn test_switch_blocks_complex() {
         let input = "2333133121414131402".to_string();
         let expected_output = "0099811188827773336446555566..............".to_string();
         let blocks = display_blocks(input);
-        let result = switch_characters(blocks).join("");
+        let result = switch_blocks(blocks).join("");
         assert_eq!(result, expected_output);
     }
 
@@ -156,7 +156,7 @@ mod tests {
         let input = "2333133121414131402".to_string();
         let expected_output = 1928;
         let blocks = display_blocks(input);
-        let result = switch_characters(blocks);
+        let result = switch_blocks(blocks);
         let checksum = calculate_checksum(result);
         assert_eq!(checksum, expected_output);
     }
