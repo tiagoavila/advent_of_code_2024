@@ -178,10 +178,10 @@ fn switch_files(mut input: Vec<Block>) -> Vec<Block> {
 fn calculate_checksum_part2(input: Vec<Block>) -> i128 {
     let mut index_count = 0;
 
-    input.into_iter().fold(0, |acc, c| match c {
+    input.into_iter().fold(0, |acc, block| match block {
         Block::File(file_size, id) => {
             let mut partial_acc = 0;
-            for i in 0..file_size {
+            for _i in 0..file_size {
                 partial_acc += (index_count as i128) * id as i128;
                 index_count += 1;
             }
