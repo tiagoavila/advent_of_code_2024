@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::File,
     io::{self, BufRead},
 };
@@ -7,6 +7,11 @@ use std::{
 enum BlockType {
     FreeSpace,
     File,
+}
+
+enum Block {
+    FreeSpace(usize),
+    File(usize, i32),
 }
 
 fn main() {
@@ -22,8 +27,11 @@ fn part1(file_path: &str) -> i128 {
     calculate_checksum(input)
 }
 
-fn part2(file_path: &str) -> i32 {
-    0
+fn part2(file_path: &str) -> i128 {
+    let input = read_file(file_path).unwrap();
+    let blocks = parse_file_string_to_blocks_representation(input);
+    let fragmented_blocks = switch_files(blocks);
+    calculate_checksum_part2(fragmented_blocks)
 }
 
 fn display_blocks(file: String) -> Vec<String> {
@@ -103,6 +111,89 @@ fn read_file(file_path: &str) -> io::Result<String> {
     Ok(input[0].to_string())
 }
 
+fn parse_file_string_to_blocks_representation(file: String) -> Vec<Block> {
+    let mut block_id: i32 = 0;
+    let mut block_type = BlockType::File;
+    file.chars()
+        .filter_map(|c| {
+            let block_size = c.to_digit(10).unwrap() as usize;
+
+            match block_type {
+                BlockType::FreeSpace => {
+                    block_type = BlockType::File;
+                    if block_size == 0 {
+                        return None;
+                    }
+                    return Some(Block::FreeSpace(block_size));
+                }
+                BlockType::File => {
+                    let file_representation = Block::File(block_size, block_id);
+                    block_id += 1;
+                    block_type = BlockType::FreeSpace;
+                    return Some(file_representation);
+                }
+            }
+        }) // Repeat each character twice
+        .collect()
+}
+
+fn switch_files(mut input: Vec<Block>) -> Vec<Block> {
+    let mut right = input.len() - 1;
+    let mut visited: HashSet<i32> = HashSet::new();
+    while right > 0 {
+        if let Block::File(file_size, id) = input[right] {
+            if visited.contains(&id) {
+                right -= 1;
+                continue;
+            }
+
+            visited.insert(id);
+            let mut swapped = false;
+            for left in 0..right {
+                if let Block::FreeSpace(free_space_size) = input[left] {
+                    if free_space_size == file_size {
+                        input.swap(right, left);
+                        swapped = true;
+                        break;
+                    } else if free_space_size > file_size {
+                        input[left] = Block::FreeSpace(free_space_size - file_size);
+                        input[right] = Block::FreeSpace(file_size);
+                        input.insert(left, Block::File(file_size, id));
+                        swapped = true;
+                        break;
+                    }
+                }
+            }
+
+            if !swapped {
+                right -= 1;
+            }
+        } else {
+            right -= 1;
+        }
+    }
+    input
+}
+
+fn calculate_checksum_part2(input: Vec<Block>) -> i128 {
+    let mut index_count = 0;
+
+    input.into_iter().fold(0, |acc, c| match c {
+        Block::File(file_size, id) => {
+            let mut partial_acc = 0;
+            for i in 0..file_size {
+                partial_acc += (index_count as i128) * id as i128;
+                index_count += 1;
+            }
+            return acc + partial_acc;
+        }
+        Block::FreeSpace(free_space) => {
+            index_count += free_space;
+            acc
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2("test.txt"), 0);
+        assert_eq!(part2("test.txt"), 2858);
     }
 
     #[test]
@@ -160,4 +251,16 @@ mod tests {
         let checksum = calculate_checksum(result);
         assert_eq!(checksum, expected_output);
     }
+
+    // #[test]
+    // fn test_() {
+    //     let input = "2333133121414131402".to_string();
+    //     let expected_output = "00...111...2...333.44.5555.6666.777.888899".to_string();
+    //     let result = parse_file_string_to_blocks_representation(input);
+    //     let result = switch_files(result);
+    //     let checksum = calculate_checksum_part2(result);
+    //     // assert_eq!(result, expected_output);
+    //     let test = true;
+    //     assert_eq!(test, true);
+    // }
 }
