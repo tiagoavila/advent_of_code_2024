@@ -31,7 +31,15 @@ fn part1(file_path: &str) -> i32 {
 }
 
 fn part2(file_path: &str) -> i32 {
-    0
+    let lines = read_file(file_path).unwrap();
+    let length = lines.len();
+    let (map, zero_positions) = parse_input_to_map(lines);
+
+    let trailhead_score = zero_positions.iter().fold(0, |acc, zero_position| {
+        acc + find_trailhead_rating(zero_position, &map, length)
+    });
+
+    return trailhead_score;
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
@@ -105,6 +113,49 @@ fn find_trailhead_score(
     trailhead_score.len() as i32
 }
 
+fn find_trailhead_rating(
+    zero_position: &(usize, usize),
+    map: &HashMap<(usize, usize), usize>,
+    length: usize,
+) -> i32 {
+    let mut stack = vec![(*zero_position, 0)];
+    let mut traihead_rating: i32 = 0;
+
+    while !stack.is_empty() {
+        let (current_position, value) = stack.pop().unwrap();
+
+        if value == 9 {
+            traihead_rating += 1;
+            continue;
+        }
+
+        DIRECTIONS.iter().for_each(|(dx, dy)| {
+            let neighbor_position = (
+                current_position.0 as i32 + dx,
+                current_position.1 as i32 + dy,
+            );
+
+            if neighbor_position.0 < 0
+                || neighbor_position.1 < 0
+                || neighbor_position.0 >= length as i32
+                || neighbor_position.1 >= length as i32
+            {
+                return;
+            }
+
+            let neighbor_position = (neighbor_position.0 as usize, neighbor_position.1 as usize);
+            let neighbor_value = map.get(&neighbor_position).unwrap();
+
+            if *neighbor_value == value + 1 {
+                stack.push((neighbor_position, *neighbor_value));
+            }
+        });
+    }
+
+    traihead_rating
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,6 +191,25 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2("test.txt"), 0);
+        assert_eq!(part2("test.txt"), 81);
+    }
+
+    #[test]
+    fn test_part2_example() {
+        let lines = read_file("test.txt").unwrap();
+        let length = lines.len();
+        let (map, _zero_positions) = parse_input_to_map(lines);
+
+        let trailhead_score = find_trailhead_rating(&(6, 6), &map, length);
+        assert_eq!(trailhead_score, 8);
+
+        let trailhead_score = find_trailhead_rating(&(0, 2), &map, length);
+        assert_eq!(trailhead_score, 20);
+
+        let trailhead_score = find_trailhead_rating(&(0, 4), &map, length);
+        assert_eq!(trailhead_score, 24);
+
+        let trailhead_score = find_trailhead_rating(&(2, 4), &map, length);
+        assert_eq!(trailhead_score, 10);
     }
 }
