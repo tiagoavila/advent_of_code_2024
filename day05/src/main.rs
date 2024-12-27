@@ -196,7 +196,7 @@ fn topological_sort(applicable_rules: Vec<(i32, i32)>) -> Vec<i32> {
 
     let mut sorted_vertexes: Vec<i32> = Vec::with_capacity(graph_hashmap.len());
 
-    while vertexes_with_in_degree_zero.len() > 0 {
+    while !vertexes_with_in_degree_zero.is_empty() {
         let current_vertex = vertexes_with_in_degree_zero.remove(0);
         sorted_vertexes.push(current_vertex);
 
