@@ -20,7 +20,7 @@ fn part1(file_path: &str) -> usize {
     let (map, (rows, cols)) = parse_input_to_map(&lines);
     find_area_and_perimeter(&map, &rows, &cols)
         .iter()
-        .map(|(_key, (area, perimeter))| area * perimeter)
+        .map(|(area, perimeter)| area * perimeter)
         .sum()
 }
 
@@ -28,8 +28,8 @@ fn find_area_and_perimeter(
     map: &HashMap<IVec2, char>,
     rows: &usize,
     cols: &usize,
-) -> HashMap<GUID, (usize, usize)> {
-    let mut areas_and_perimeters: HashMap<GUID, (usize, usize)> = HashMap::new();
+) -> Vec<(usize, usize)> {
+    let mut areas_and_perimeters: Vec<(usize, usize)> = Vec::new();
     let mut visited: HashSet<IVec2> = HashSet::new();
     let mut area_identifier = ' ';
     let mut area_size = 0;
@@ -69,7 +69,7 @@ fn find_area_and_perimeter(
                         }
                     }
 
-                    // If the neighbor is inside the bounds and it is part of the same area, then the perimeter is reduced by 1
+                    // Every time a neighbor of the same area is found decrease the parameter of the current area by 1
                     if is_inside_bounds(rows, cols, neighbor) {
                         let neighbor_value = map.get(&neighbor).unwrap();
                         if *neighbor_value == area_identifier {
@@ -81,8 +81,7 @@ fn find_area_and_perimeter(
                 perimeter += current_perimeter;
             }
 
-            let guid = GUID::rand();
-            areas_and_perimeters.insert(guid, (area_size, perimeter));
+            areas_and_perimeters.push((area_size, perimeter));
             area_identifier = ' ';
             area_size = 0;
             perimeter = 0;
