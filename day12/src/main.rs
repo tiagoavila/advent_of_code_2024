@@ -94,50 +94,36 @@ fn part2(file_path: &str) -> i32 {
                     current_position = current_position + direction;
                 } else {
                     sides_count += 1;
-                    direction = match direction {
-                        MatrixCell::RIGHT => {
-                            let right_neighbor = current_position + MatrixCell::RIGHT;
-                            let top_neighbor = current_position + MatrixCell::TOP;
-                            if !area.contains(&right_neighbor) && !area.contains(&top_neighbor) {
-                                MatrixCell::BOTTOM
-                            } else {
-                                current_position = current_position + MatrixCell::TOP;
-                                MatrixCell::TOP
-                            }
-                        }
-                        MatrixCell::BOTTOM => {
-                            let bottom_neighbor = current_position + MatrixCell::BOTTOM;
-                            let right_neighbor = current_position + MatrixCell::RIGHT;
-                            if !area.contains(&bottom_neighbor) && !area.contains(&right_neighbor) {
-                                MatrixCell::LEFT
-                            } else {
-                                current_position = current_position + MatrixCell::RIGHT;
-                                MatrixCell::RIGHT
-                            }
-                        }
-                        MatrixCell::LEFT => {
-                            let left_neighbor = current_position + MatrixCell::LEFT;
-                            let bottom_neighbor = current_position + MatrixCell::BOTTOM;
-                            if !area.contains(&left_neighbor) && !area.contains(&bottom_neighbor) {
-                                MatrixCell::TOP
-                            } else {
-                                current_position = current_position + MatrixCell::BOTTOM;
-                                MatrixCell::BOTTOM
-                            }
-                        }
-                        MatrixCell::TOP => {
-                            let top_neighbor = current_position + MatrixCell::TOP;
-                            let left_neighbor = current_position + MatrixCell::LEFT;
-                            if !area.contains(&top_neighbor) && !area.contains(&left_neighbor) {
-                                MatrixCell::RIGHT
-                            } else {
-                                current_position = current_position + MatrixCell::LEFT;
-                                MatrixCell::LEFT
-                            }
-                        }
-                        _ => MatrixCell::RIGHT,
-                    };
+                    get_next_direction(area, &mut current_position, &mut direction);
                 }
+            }
+
+            if area.len() >= 8 {
+                // count sides for inner areas
+                area.iter().for_each(|position| {
+                    let bottom_neighbor = *position + MatrixCell::BOTTOM;
+                    let bottom_left_neighbor = *position + MatrixCell::BOTTOM + MatrixCell::LEFT;
+                    if !area.contains(&bottom_neighbor) && area.contains(&bottom_left_neighbor) {
+                        //found a starting cell of an inner area, let's count the sides
+                        let first_position = *position + MatrixCell::LEFT;
+                        let mut current_position = *position;
+                        let mut direction = MatrixCell::RIGHT;
+                        sides_count += 1;
+
+                        loop {
+                            if first_position == current_position && direction == MatrixCell::TOP {
+                                break;
+                            }
+
+                            if is_cell_in_border_inner_area(&current_position, &direction, &area) {
+                                current_position = current_position + direction;
+                            } else {
+                                sides_count += 1;
+                                get_next_direction_inner_area(area, &mut current_position, &mut direction);
+                            }
+                        }
+                    }
+                });
             }
 
             (area.len(), sides_count)
@@ -177,6 +163,128 @@ fn is_cell_in_border(
         }
         _ => false,
     }
+}
+
+fn get_next_direction(area: &Vec<MatrixCell>, current_position: &mut MatrixCell, direction: &mut MatrixCell) {
+    *direction = match *direction {
+        MatrixCell::RIGHT => {
+            let right_neighbor = *current_position + MatrixCell::RIGHT;
+            let top_neighbor = *current_position + MatrixCell::TOP;
+            if !area.contains(&right_neighbor) && !area.contains(&top_neighbor) {
+                MatrixCell::BOTTOM
+            } else {
+                *current_position = *current_position + MatrixCell::TOP;
+                MatrixCell::TOP
+            }
+        }
+        MatrixCell::BOTTOM => {
+            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
+            let right_neighbor = *current_position + MatrixCell::RIGHT;
+            if !area.contains(&bottom_neighbor) && !area.contains(&right_neighbor) {
+                MatrixCell::LEFT
+            } else {
+                *current_position = *current_position + MatrixCell::RIGHT;
+                MatrixCell::RIGHT
+            }
+        }
+        MatrixCell::LEFT => {
+            let left_neighbor = *current_position + MatrixCell::LEFT;
+            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
+            if !area.contains(&left_neighbor) && !area.contains(&bottom_neighbor) {
+                MatrixCell::TOP
+            } else {
+                *current_position = *current_position + MatrixCell::BOTTOM;
+                MatrixCell::BOTTOM
+            }
+        }
+        MatrixCell::TOP => {
+            let top_neighbor = *current_position + MatrixCell::TOP;
+            let left_neighbor = *current_position + MatrixCell::LEFT;
+            if !area.contains(&top_neighbor) && !area.contains(&left_neighbor) {
+                MatrixCell::RIGHT
+            } else {
+                *current_position = *current_position + MatrixCell::LEFT;
+                MatrixCell::LEFT
+            }
+        }
+        _ => MatrixCell::RIGHT,
+    };
+}
+
+fn is_cell_in_border_inner_area(
+    position: &MatrixCell,
+    direction: &MatrixCell,
+    area: &Vec<MatrixCell>,
+) -> bool {
+    match *direction {
+        MatrixCell::RIGHT => {
+            let bottom_neighbor = *position + MatrixCell::BOTTOM;
+            let right_neighbor = *position + MatrixCell::RIGHT;
+            return !area.contains(&bottom_neighbor) && area.contains(&right_neighbor);
+        }
+        MatrixCell::BOTTOM => {
+            let left_neighbor = *position + MatrixCell::LEFT;
+            let bottom_neighbor = *position + MatrixCell::BOTTOM;
+            return !area.contains(&left_neighbor) && area.contains(&bottom_neighbor);
+        }
+        MatrixCell::LEFT => {
+            let top_neighbor = *position + MatrixCell::TOP;
+            let left_neighbor = *position + MatrixCell::LEFT;
+            return !area.contains(&top_neighbor) && area.contains(&left_neighbor);
+        }
+        MatrixCell::TOP => {
+            let right_neighbor = *position + MatrixCell::RIGHT;
+            let top_neighbor = *position + MatrixCell::TOP;
+            return !area.contains(&right_neighbor) && area.contains(&top_neighbor);
+        }
+        _ => false,
+    }
+}
+
+fn get_next_direction_inner_area(area: &Vec<MatrixCell>, current_position: &mut MatrixCell, direction: &mut MatrixCell) {
+    *direction = match *direction {
+        MatrixCell::RIGHT => {
+            let left_neighbor = *current_position + MatrixCell::LEFT;
+            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
+            if area.contains(&left_neighbor) && area.contains(&bottom_neighbor) {
+                *current_position = *current_position + MatrixCell::BOTTOM;
+                MatrixCell::BOTTOM
+            } else {
+                MatrixCell::TOP
+            }
+        }
+        MatrixCell::BOTTOM => {
+            let top_neighbor = *current_position + MatrixCell::TOP;
+            let left_neighbor = *current_position + MatrixCell::LEFT;
+            if area.contains(&top_neighbor) && area.contains(&left_neighbor) {
+                *current_position = *current_position + MatrixCell::LEFT;
+                MatrixCell::LEFT
+            } else {
+                MatrixCell::RIGHT
+            }
+        }
+        MatrixCell::LEFT => {
+            let right_neighbor = *current_position + MatrixCell::RIGHT;
+            let top_neighbor = *current_position + MatrixCell::TOP;
+            if area.contains(&right_neighbor) && area.contains(&top_neighbor) {
+                *current_position = *current_position + MatrixCell::TOP;
+                MatrixCell::TOP
+            } else {
+                MatrixCell::BOTTOM
+            }
+        }
+        MatrixCell::TOP => {
+            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
+            let right_neighbor = *current_position + MatrixCell::RIGHT;
+            if area.contains(&bottom_neighbor) && area.contains(&right_neighbor) {
+                *current_position = *current_position + MatrixCell::RIGHT;
+                MatrixCell::RIGHT
+            } else {
+                MatrixCell::LEFT
+            }
+        }
+        _ => MatrixCell::RIGHT,
+    };
 }
 
 fn find_area_and_perimeter(
@@ -381,5 +489,10 @@ mod tests {
     #[test]
     fn test_example_3_part2() {
         assert_eq!(part2("example3.txt"), 368);
+    }
+
+    #[test]
+    fn test_example_with_one_inner_area_part2() {
+        assert_eq!(part2("example_with_one_inner_area.txt"), 68);
     }
 }
