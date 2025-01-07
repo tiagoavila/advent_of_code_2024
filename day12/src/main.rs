@@ -80,50 +80,61 @@ fn part2(file_path: &str) -> i32 {
                 return (1, 4);
             }
 
-            let mut sides_count = 1;
-            let first_position = area[0];
-            let mut current_position = first_position;
-            let mut direction = MatrixCell::RIGHT;
+            let mut sides_count = 0;
 
-            loop {
-                if first_position == current_position && direction == MatrixCell::TOP {
-                    break;
-                }
+            for position in area.iter() {
+                let top_left_neighbor = *position + MatrixCell::TOP + MatrixCell::LEFT;
+                let top_neighbor = *position + MatrixCell::TOP;
+                let top_right_neighbor = *position + MatrixCell::TOP + MatrixCell::RIGHT;
+                let right_neighbor = *position + MatrixCell::RIGHT;
+                let bottom_right_neighbor = *position + MatrixCell::BOTTOM + MatrixCell::RIGHT;
+                let bottom_neighbor = *position + MatrixCell::BOTTOM;
+                let bottom_left_neighbor = *position + MatrixCell::BOTTOM + MatrixCell::LEFT;
+                let left_neighbor = *position + MatrixCell::LEFT;
 
-                if is_cell_in_border(&current_position, &direction, &area) {
-                    current_position = current_position + direction;
-                } else {
+                //check top left corner
+                if !area.contains(&left_neighbor) && !area.contains(&top_left_neighbor) && !area.contains(&top_neighbor) {
                     sides_count += 1;
-                    get_next_direction(area, &mut current_position, &mut direction);
                 }
-            }
 
-            if area.len() >= 8 {
-                // count sides for inner areas
-                area.iter().for_each(|position| {
-                    let bottom_neighbor = *position + MatrixCell::BOTTOM;
-                    let bottom_left_neighbor = *position + MatrixCell::BOTTOM + MatrixCell::LEFT;
-                    if !area.contains(&bottom_neighbor) && area.contains(&bottom_left_neighbor) {
-                        //found a starting cell of an inner area, let's count the sides
-                        let first_position = *position + MatrixCell::LEFT;
-                        let mut current_position = *position;
-                        let mut direction = MatrixCell::RIGHT;
-                        sides_count += 1;
+                //check top right corner
+                if !area.contains(&top_neighbor) && !area.contains(&top_right_neighbor) && !area.contains(&right_neighbor) {
+                    sides_count += 1;
+                }
 
-                        loop {
-                            if first_position == current_position && direction == MatrixCell::TOP {
-                                break;
-                            }
+                //check bottom right corner
+                if !area.contains(&right_neighbor) && !area.contains(&bottom_right_neighbor) && !area.contains(&bottom_neighbor) {
+                    sides_count += 1;
+                }
 
-                            if is_cell_in_border_inner_area(&current_position, &direction, &area) {
-                                current_position = current_position + direction;
-                            } else {
-                                sides_count += 1;
-                                get_next_direction_inner_area(area, &mut current_position, &mut direction);
-                            }
-                        }
-                    }
-                });
+                //check bottom left corner
+                if !area.contains(&bottom_neighbor) && !area.contains(&bottom_left_neighbor) && !area.contains(&left_neighbor) {
+                    sides_count += 1;
+                }
+
+                //check inner top left corner
+                if (area.contains(&right_neighbor) && area.contains(&bottom_neighbor) && !area.contains(&bottom_right_neighbor)) 
+                || (!area.contains(&top_neighbor) && !area.contains(&right_neighbor) && area.contains(&bottom_neighbor) && area.contains(&top_right_neighbor)) {
+                    sides_count += 1;
+                }
+
+                //check inner top right corner
+                if (area.contains(&left_neighbor) && area.contains(&bottom_neighbor) && !area.contains(&bottom_left_neighbor)) 
+                    || (!area.contains(&&top_neighbor) && !area.contains(&left_neighbor) && area.contains(&bottom_neighbor) && area.contains(&top_left_neighbor)) {
+                    sides_count += 1;
+                }
+
+                //check inner bottom right corner
+                if (area.contains(&left_neighbor) && area.contains(&top_neighbor) && !area.contains(&top_left_neighbor)) 
+                || (!area.contains(&left_neighbor) && !area.contains(&bottom_neighbor) && area.contains(&top_neighbor) && area.contains(&bottom_left_neighbor)) {
+                    sides_count += 1;
+                }
+
+                //check inner bottom left corner
+                if (area.contains(&right_neighbor) && area.contains(&top_neighbor) && !area.contains(&top_right_neighbor)) 
+                || (!area.contains(&right_neighbor) && !area.contains(&bottom_neighbor) && area.contains(&top_neighbor) && area.contains(&bottom_right_neighbor)){
+                    sides_count += 1;
+                }
             }
 
             (area.len(), sides_count)
