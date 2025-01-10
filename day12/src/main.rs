@@ -13,7 +13,6 @@ const DIRECTIONS_MATRIX: [MatrixCell; 4] = [
     MatrixCell::RIGHT,
     MatrixCell::LEFT,
 ];
-const DIRECTIONS_CLOCKWISE: [IVec2; 4] = [IVec2::X, IVec2::Y, IVec2::NEG_X, IVec2::NEG_Y];
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 struct MatrixCell {
@@ -114,25 +113,25 @@ fn part2(file_path: &str) -> i32 {
 
                 //check inner top left corner
                 if (area.contains(&right_neighbor) && area.contains(&bottom_neighbor) && !area.contains(&bottom_right_neighbor)) 
-                || (!area.contains(&top_neighbor) && !area.contains(&right_neighbor) && area.contains(&bottom_neighbor) && area.contains(&top_right_neighbor)) {
+                || (!area.contains(&top_neighbor) && !area.contains(&right_neighbor) && area.contains(&top_right_neighbor)) {
                     sides_count += 1;
                 }
 
                 //check inner top right corner
                 if (area.contains(&left_neighbor) && area.contains(&bottom_neighbor) && !area.contains(&bottom_left_neighbor)) 
-                    || (!area.contains(&&top_neighbor) && !area.contains(&left_neighbor) && area.contains(&bottom_neighbor) && area.contains(&top_left_neighbor)) {
+                    || (!area.contains(&top_neighbor) && !area.contains(&left_neighbor) && area.contains(&top_left_neighbor)) {
                     sides_count += 1;
                 }
 
                 //check inner bottom right corner
                 if (area.contains(&left_neighbor) && area.contains(&top_neighbor) && !area.contains(&top_left_neighbor)) 
-                || (!area.contains(&left_neighbor) && !area.contains(&bottom_neighbor) && area.contains(&top_neighbor) && area.contains(&bottom_left_neighbor)) {
+                || (!area.contains(&left_neighbor) && !area.contains(&bottom_neighbor) && area.contains(&bottom_left_neighbor)) {
                     sides_count += 1;
                 }
 
                 //check inner bottom left corner
                 if (area.contains(&right_neighbor) && area.contains(&top_neighbor) && !area.contains(&top_right_neighbor)) 
-                || (!area.contains(&right_neighbor) && !area.contains(&bottom_neighbor) && area.contains(&top_neighbor) && area.contains(&bottom_right_neighbor)){
+                || (!area.contains(&right_neighbor) && !area.contains(&bottom_neighbor) && area.contains(&bottom_right_neighbor)){
                     sides_count += 1;
                 }
             }
@@ -144,158 +143,6 @@ fn part2(file_path: &str) -> i32 {
     areas_sides.iter().fold(0, |acc, (area_len, sides_count)| {
         acc + area_len * sides_count
     }) as i32
-}
-
-fn is_cell_in_border(
-    position: &MatrixCell,
-    direction: &MatrixCell,
-    area: &Vec<MatrixCell>,
-) -> bool {
-    match *direction {
-        MatrixCell::RIGHT => {
-            let top_neighbor = *position + MatrixCell::TOP;
-            let right_neighbor = *position + MatrixCell::RIGHT;
-            return !area.contains(&top_neighbor) && area.contains(&right_neighbor);
-        }
-        MatrixCell::BOTTOM => {
-            let right_neighbor = *position + MatrixCell::RIGHT;
-            let bottom_neighbor = *position + MatrixCell::BOTTOM;
-            return !area.contains(&right_neighbor) && area.contains(&bottom_neighbor);
-        }
-        MatrixCell::LEFT => {
-            let bottom_neighbor = *position + MatrixCell::BOTTOM;
-            let left_neighbor = *position + MatrixCell::LEFT;
-            return !area.contains(&bottom_neighbor) && area.contains(&left_neighbor);
-        }
-        MatrixCell::TOP => {
-            let left_neighbor = *position + MatrixCell::LEFT;
-            let top_neighbor = *position + MatrixCell::TOP;
-            return !area.contains(&left_neighbor) && area.contains(&top_neighbor);
-        }
-        _ => false,
-    }
-}
-
-fn get_next_direction(area: &Vec<MatrixCell>, current_position: &mut MatrixCell, direction: &mut MatrixCell) {
-    *direction = match *direction {
-        MatrixCell::RIGHT => {
-            let right_neighbor = *current_position + MatrixCell::RIGHT;
-            let top_neighbor = *current_position + MatrixCell::TOP;
-            if !area.contains(&right_neighbor) && !area.contains(&top_neighbor) {
-                MatrixCell::BOTTOM
-            } else {
-                *current_position = *current_position + MatrixCell::TOP;
-                MatrixCell::TOP
-            }
-        }
-        MatrixCell::BOTTOM => {
-            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
-            let right_neighbor = *current_position + MatrixCell::RIGHT;
-            if !area.contains(&bottom_neighbor) && !area.contains(&right_neighbor) {
-                MatrixCell::LEFT
-            } else {
-                *current_position = *current_position + MatrixCell::RIGHT;
-                MatrixCell::RIGHT
-            }
-        }
-        MatrixCell::LEFT => {
-            let left_neighbor = *current_position + MatrixCell::LEFT;
-            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
-            if !area.contains(&left_neighbor) && !area.contains(&bottom_neighbor) {
-                MatrixCell::TOP
-            } else {
-                *current_position = *current_position + MatrixCell::BOTTOM;
-                MatrixCell::BOTTOM
-            }
-        }
-        MatrixCell::TOP => {
-            let top_neighbor = *current_position + MatrixCell::TOP;
-            let left_neighbor = *current_position + MatrixCell::LEFT;
-            if !area.contains(&top_neighbor) && !area.contains(&left_neighbor) {
-                MatrixCell::RIGHT
-            } else {
-                *current_position = *current_position + MatrixCell::LEFT;
-                MatrixCell::LEFT
-            }
-        }
-        _ => MatrixCell::RIGHT,
-    };
-}
-
-fn is_cell_in_border_inner_area(
-    position: &MatrixCell,
-    direction: &MatrixCell,
-    area: &Vec<MatrixCell>,
-) -> bool {
-    match *direction {
-        MatrixCell::RIGHT => {
-            let bottom_neighbor = *position + MatrixCell::BOTTOM;
-            let right_neighbor = *position + MatrixCell::RIGHT;
-            return !area.contains(&bottom_neighbor) && area.contains(&right_neighbor);
-        }
-        MatrixCell::BOTTOM => {
-            let left_neighbor = *position + MatrixCell::LEFT;
-            let bottom_neighbor = *position + MatrixCell::BOTTOM;
-            return !area.contains(&left_neighbor) && area.contains(&bottom_neighbor);
-        }
-        MatrixCell::LEFT => {
-            let top_neighbor = *position + MatrixCell::TOP;
-            let left_neighbor = *position + MatrixCell::LEFT;
-            return !area.contains(&top_neighbor) && area.contains(&left_neighbor);
-        }
-        MatrixCell::TOP => {
-            let right_neighbor = *position + MatrixCell::RIGHT;
-            let top_neighbor = *position + MatrixCell::TOP;
-            return !area.contains(&right_neighbor) && area.contains(&top_neighbor);
-        }
-        _ => false,
-    }
-}
-
-fn get_next_direction_inner_area(area: &Vec<MatrixCell>, current_position: &mut MatrixCell, direction: &mut MatrixCell) {
-    *direction = match *direction {
-        MatrixCell::RIGHT => {
-            let left_neighbor = *current_position + MatrixCell::LEFT;
-            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
-            if area.contains(&left_neighbor) && area.contains(&bottom_neighbor) {
-                *current_position = *current_position + MatrixCell::BOTTOM;
-                MatrixCell::BOTTOM
-            } else {
-                MatrixCell::TOP
-            }
-        }
-        MatrixCell::BOTTOM => {
-            let top_neighbor = *current_position + MatrixCell::TOP;
-            let left_neighbor = *current_position + MatrixCell::LEFT;
-            if area.contains(&top_neighbor) && area.contains(&left_neighbor) {
-                *current_position = *current_position + MatrixCell::LEFT;
-                MatrixCell::LEFT
-            } else {
-                MatrixCell::RIGHT
-            }
-        }
-        MatrixCell::LEFT => {
-            let right_neighbor = *current_position + MatrixCell::RIGHT;
-            let top_neighbor = *current_position + MatrixCell::TOP;
-            if area.contains(&right_neighbor) && area.contains(&top_neighbor) {
-                *current_position = *current_position + MatrixCell::TOP;
-                MatrixCell::TOP
-            } else {
-                MatrixCell::BOTTOM
-            }
-        }
-        MatrixCell::TOP => {
-            let bottom_neighbor = *current_position + MatrixCell::BOTTOM;
-            let right_neighbor = *current_position + MatrixCell::RIGHT;
-            if area.contains(&bottom_neighbor) && area.contains(&right_neighbor) {
-                *current_position = *current_position + MatrixCell::RIGHT;
-                MatrixCell::RIGHT
-            } else {
-                MatrixCell::LEFT
-            }
-        }
-        _ => MatrixCell::RIGHT,
-    };
 }
 
 fn find_area_and_perimeter(
