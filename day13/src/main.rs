@@ -87,9 +87,11 @@ fn part2(file_path: &str) -> usize {
                 .unzip();
 
             // let mut matrix = vec![x_values, y_values];
-            let eq1 = (x_values[0].clone(), x_values[1].clone(), x_values[2].clone() + 10000000000000);
-            let eq2 = (y_values[0].clone(), y_values[1].clone(), y_values[2].clone() + 10000000000000);
-            crate::matrix_operations::solve_by_substitution(eq1, eq2)
+            let mut matrix = vec![
+                vec![x_values[0] as f64, x_values[1] as f64, x_values[2] as f64 + 10000000000000.0],
+                vec![y_values[0] as f64, y_values[1] as f64, y_values[2] as f64 + 10000000000000.0],
+            ];
+            crate::matrix_operations::gaussian_elimination(&mut matrix)
         }) // Convert borrowed slices into owned Vec<String>
         .collect();
 
@@ -127,8 +129,8 @@ mod tests {
         assert_eq!(part1("challenge.txt"), 37128);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     assert_eq!(part2("test.txt"), 0);
-    // }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2("challenge.txt"), 74914228471331);
+    }
 }
