@@ -30,10 +30,12 @@ fn main() {
 }
 
 fn part1(file_path: &str) -> i32 {
+    let mut lines = read_file(file_path).unwrap();
     0
 }
 
 fn part2(file_path: &str) -> i32 {
+    let mut lines = read_file(file_path).unwrap();
     0
 }
 
