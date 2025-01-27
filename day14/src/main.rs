@@ -52,10 +52,10 @@ fn part1(file_path: &str, room_area: (usize, usize)) -> i32 {
             let velocity_part = parts[1].to_string().replace("v=", "");
             let velocity: Vec<&str> = velocity_part.split(',').collect();
 
-            let row = position[0].parse::<usize>().unwrap();
-            let col = position[1].parse::<usize>().unwrap();
-            let row_velocity = velocity[0].parse::<isize>().unwrap();
-            let col_velocity = velocity[1].parse::<isize>().unwrap();
+            let row = position[1].parse::<usize>().unwrap();
+            let col = position[0].parse::<usize>().unwrap();
+            let row_velocity = velocity[1].parse::<isize>().unwrap();
+            let col_velocity = velocity[0].parse::<isize>().unwrap();
 
             Robot {
                 row,
@@ -65,14 +65,42 @@ fn part1(file_path: &str, room_area: (usize, usize)) -> i32 {
             }
         })
         .collect();
-
+    
     for _ in 0..100 {
         robots
             .iter_mut()
             .for_each(|robot| robot.navigate(room_area.0, room_area.1));
     }
 
-    0
+    let robots_count_map: HashMap<(usize, usize), usize> =
+        robots.iter().fold(HashMap::new(), |mut acc, robot| {
+            let count = acc.entry((robot.row, robot.col)).or_insert(0);
+            *count += 1;
+            acc
+        });
+
+    let center_position = (room_area.0 / 2, room_area.1 / 2);
+
+    let robots_count_quadrant1 = count_robots_by_quadrant(&robots_count_map, 0, 0, center_position.0, center_position.1);
+    let robots_count_quadrant2 = count_robots_by_quadrant(&robots_count_map, 0, center_position.1 + 1, center_position.0, room_area.1);
+    let robots_count_quadrant3 = count_robots_by_quadrant(&robots_count_map, center_position.0 + 1, 0, room_area.0, center_position.1);
+    let robots_count_quadrant4 = count_robots_by_quadrant(&robots_count_map, center_position.0 + 1, center_position.1 + 1, room_area.0, room_area.1);
+
+    robots_count_quadrant1 * robots_count_quadrant2 * robots_count_quadrant3 * robots_count_quadrant4
+}
+
+fn count_robots_by_quadrant(robots_count_map: &HashMap<(usize, usize), usize>, start_row: usize, start_col: usize, end_row: usize, end_col: usize) -> i32{
+    let mut robots_by_quadrant = 0;
+
+    for row in start_row..end_row {
+        for col in start_col..end_col {
+            if robots_count_map.contains_key(&(row, col)) {
+                robots_by_quadrant += robots_count_map.get(&(row, col)).unwrap();
+            }
+        }
+    }
+
+    robots_by_quadrant as i32
 }
 
 fn part2(file_path: &str) -> i32 {
@@ -96,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1("test.txt", (7, 11)), 0);
+        assert_eq!(part1("test.txt", (7, 11)), 12);
     }
 
     #[test]
@@ -105,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn test_movement_single_robot_by_five_seconds(){
+    fn test_movement_single_robot_by_five_seconds() {
         let mut robot = Robot {
             row: 4,
             col: 2,
