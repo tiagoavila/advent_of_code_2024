@@ -17,23 +17,41 @@ fn part1(file_path: &str) -> i32 {
     let empty_line_index = lines.iter().position(|line| line.is_empty()).unwrap();
     let warehouse_map = lines[..empty_line_index].to_vec();
     let movements = lines[empty_line_index + 1..].to_vec().join("");
-    
-    let mut robot_position = matrix::Robot::new(0, 0);
+
+    let mut robot = matrix::Robot::new(0, 0);
     let mut map: HashMap<(usize, usize), char> = HashMap::new();
     for (row, line) in warehouse_map.iter().enumerate() {
         for (col, ch) in line.chars().enumerate() {
             map.insert((row, col), ch);
 
             if ch == '@' {
-                robot_position = matrix::Robot::new(row, col);
+                robot = matrix::Robot::new(row, col);
             }
         }
     }
 
-    println!("{:?}", map);
-    println!("{:?}", movements);
+    for movement in movements.chars() {
+        let direction = match movement {
+            '^' => matrix::Direction::TOP,
+            'v' => matrix::Direction::BOTTOM,
+            '<' => matrix::Direction::LEFT,
+            '>' => matrix::Direction::RIGHT,
+            _ => panic!("Invalid movement"),
+        };
+        robot.move_robot(&mut map, direction);
+    }
 
-    0
+    map.iter()
+        .filter_map(|position| {
+            if position.1 == &'O' {
+                Some((position.0 .0, position.0 .1))
+            } else {
+                None
+            }
+        })
+        .fold(0, |acc, position| {
+            acc + (100 * position.0 as i32 + position.1 as i32)
+        })
 }
 
 fn part2(file_path: &str) -> i32 {
