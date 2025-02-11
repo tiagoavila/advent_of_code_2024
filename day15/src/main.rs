@@ -43,20 +43,17 @@ fn part1(file_path: &str) -> i32 {
 
 fn part2(file_path: &str) -> i32 {
     let (warehouse, movements) = get_warehouse_and_movements(file_path);
+    let doubled_warehouse = double_warehouse(warehouse);
+    let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
 
-    let doubled_warehouse: Vec<String> = warehouse.iter().map(|line| {
-        line.chars().map(|ch| {
-            match ch {
-                '#' => "##",
-                'O' => "[]",
-                '.' => "..",
-                '@' => "@.",
-                _ => "",  // Using _ is the conventional way to match any remaining patterns
-            }.to_string()
-        }).collect::<String>()
-    }).collect();
+    0
+}
 
-    let (mut robot, mut warehouse_map) = get_warehouse_map(doubled_warehouse);
+fn process_warehouse_movements(
+    warehouse: Vec<String>,
+    movements: String,
+) -> HashMap<(usize, usize), char> {
+    let (mut robot, mut warehouse_map) = get_warehouse_map(warehouse);
 
     for movement in movements.chars() {
         let direction = match movement {
@@ -66,11 +63,30 @@ fn part2(file_path: &str) -> i32 {
             '>' => matrix::Direction::RIGHT,
             _ => panic!("Invalid movement"),
         };
-        robot.move_robot(&mut warehouse_map, direction);
+        robot.move_robot_part2(&mut warehouse_map, direction);
     }
 
-    let (mut robot, mut warehouse_map) = get_warehouse_map(warehouse);
-    0
+    warehouse_map
+}
+
+fn double_warehouse(warehouse: Vec<String>) -> Vec<String> {
+    warehouse
+        .iter()
+        .map(|line| {
+            line.chars()
+                .map(|ch| {
+                    match ch {
+                        '#' => "##",
+                        'O' => "[]",
+                        '.' => "..",
+                        '@' => "@.",
+                        _ => "", // Using _ is the conventional way to match any remaining patterns
+                    }
+                    .to_string()
+                })
+                .collect::<String>()
+        })
+        .collect()
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
@@ -120,14 +136,45 @@ mod tests {
         assert_eq!(part1("simple_example.txt"), 2028);
     }
 
+    // #[test]
+    // fn test_part2() {
+    //     assert_eq!(part2("test.txt"), 0);
+    // }
+
     #[test]
-    fn test_part2() {
-        assert_eq!(part2("test.txt"), 0);
+    fn test_move_boxes_to_left_and_empty_down() {
+        let (warehouse, _) = get_warehouse_and_movements("simple_example2.txt");
+        let doubled_warehouse = double_warehouse(warehouse);
+        let movements = "<v".to_string();
+        let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
+        assert_eq!(warehouse_map.get(&(3, 5)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(3, 6)).unwrap(), &']');
+        assert_eq!(warehouse_map.get(&(3, 7)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(3, 8)).unwrap(), &']');
+        assert_eq!(warehouse_map.get(&(3, 9)).unwrap(), &'.');
+        assert_eq!(warehouse_map.get(&(4, 9)).unwrap(), &'@');
     }
 
     #[test]
-    fn test_simple_example_part2() {
-        assert_eq!(part2("simple_example2.txt"), 2028);
-    }
+    fn test_move_boxes_up() {
+        let (warehouse, _) = get_warehouse_and_movements("simple_example2.txt");
+        let doubled_warehouse = double_warehouse(warehouse);
+        let movements = "<vv<<^".to_string();
+        let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
 
+        assert_eq!(warehouse_map.get(&(2, 5)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(2, 6)).unwrap(), &']');
+        assert_eq!(warehouse_map.get(&(2, 7)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(2, 8)).unwrap(), &']');
+
+        assert_eq!(warehouse_map.get(&(3, 5)).unwrap(), &'.');
+        assert_eq!(warehouse_map.get(&(3, 6)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(3, 7)).unwrap(), &']');
+        assert_eq!(warehouse_map.get(&(3, 8)).unwrap(), &'.');
+
+        assert_eq!(warehouse_map.get(&(3, 9)).unwrap(), &'.');
+        assert_eq!(warehouse_map.get(&(4, 9)).unwrap(), &'.');
+        assert_eq!(warehouse_map.get(&(4, 8)).unwrap(), &'.');
+        assert_eq!(warehouse_map.get(&(4, 7)).unwrap(), &'@');
+    }
 }

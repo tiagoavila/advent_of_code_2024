@@ -103,43 +103,97 @@ impl Robot {
             }
             '[' | ']' => match direction {
                 Direction::LEFT | Direction::RIGHT => {
-                    let mut empty_or_wall_position = Self {
-                        row: (new_robot_position.row as isize + direction.row) as usize,
-                        col: (new_robot_position.col as isize + direction.col) as usize,
-                    };
-
-                    let mut positions_to_move_stack: Vec<(usize, usize)> = Vec::new();
-                    positions_to_move_stack.push((empty_or_wall_position.row, empty_or_wall_position.col));
-
-                    while let Some(&ch) = warehouse_map.get(&(empty_or_wall_position.row, empty_or_wall_position.col)) {
-                        if ch == '[' || ch == ']' {
-                            empty_or_wall_position.row =
-                                (empty_or_wall_position.row as isize + direction.row) as usize;
-                            empty_or_wall_position.col =
-                                (empty_or_wall_position.col as isize + direction.col) as usize;
-                            positions_to_move_stack.push((empty_or_wall_position.row, empty_or_wall_position.col));
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if let Some(ch) = warehouse_map.get_mut(&(empty_or_wall_position.row, empty_or_wall_position.col)) {
-                        if *ch == '.' {
-                            while !positions_to_move_stack.is_empty() {
-                                let (row, col) = positions_to_move_stack.pop().unwrap();
-                                let (previous_row, previous_col) = positions_to_move_stack.last().unwrap();
-                                *warehouse_map.get_mut(&(row, col)).unwrap() = *warehouse_map.get(&(*previous_row, *previous_col)).unwrap();
-                            }
-                        }
-                    }
+                    self.process_horizontal_movement_part2(
+                        warehouse_map,
+                        direction,
+                        new_robot_position,
+                    );
                 }
-                Direction::TOP | Direction::BOTTOM => {}
+                Direction::TOP | Direction::BOTTOM => {
+                    self.process_vertical_movement_part2(
+                        warehouse_map,
+                        direction,
+                        new_robot_position,
+                    );
+                }
                 _ => (),
             },
             _ => (),
         }
 
         *self
+    }
+
+    fn process_horizontal_movement_part2(
+        &mut self,
+        warehouse_map: &mut HashMap<(usize, usize), char>,
+        direction: Direction,
+        new_robot_position: Robot,
+    ) {
+        let mut empty_or_wall_position = Self {
+            row: (new_robot_position.row as isize + direction.row) as usize,
+            col: (new_robot_position.col as isize + direction.col) as usize,
+        };
+
+        let mut positions_to_move_stack: Vec<(usize, usize)> = Vec::new();
+        positions_to_move_stack.push((new_robot_position.row, new_robot_position.col));
+
+        while let Some(&ch) =
+            warehouse_map.get(&(empty_or_wall_position.row, empty_or_wall_position.col))
+        {
+            if ch == '[' || ch == ']' {
+                positions_to_move_stack
+                    .push((empty_or_wall_position.row, empty_or_wall_position.col));
+
+                empty_or_wall_position.row =
+                    (empty_or_wall_position.row as isize + direction.row) as usize;
+                empty_or_wall_position.col =
+                    (empty_or_wall_position.col as isize + direction.col) as usize;
+            } else {
+                break;
+            }
+        }
+
+        if let Some(ch) =
+            warehouse_map.get(&(empty_or_wall_position.row, empty_or_wall_position.col))
+        {
+            if *ch == '.' {
+                positions_to_move_stack
+                    .push((empty_or_wall_position.row, empty_or_wall_position.col));
+
+                while !positions_to_move_stack.is_empty() {
+                    let (row, col) = positions_to_move_stack.pop().unwrap();
+                    match positions_to_move_stack.last() {
+                        Some((previous_row, previous_col)) => {
+                            *warehouse_map.get_mut(&(row, col)).unwrap() =
+                                *warehouse_map.get(&(*previous_row, *previous_col)).unwrap();
+                        }
+                        None => {
+                            *warehouse_map.get_mut(&(row, col)).unwrap() = '@';
+                        }
+                    }
+                }
+
+                warehouse_map
+                    .entry((self.row, self.col))
+                    .and_modify(|v| *v = '.');
+                *self = new_robot_position;
+            }
+        }
+    }
+
+    fn process_vertical_movement_part2(
+        &mut self,
+        warehouse_map: &mut HashMap<(usize, usize), char>,
+        direction: Direction,
+        new_robot_position: Robot,
+    ) {
+        let mut empty_or_wall_position = Self {
+            row: (new_robot_position.row as isize + direction.row) as usize,
+            col: (new_robot_position.col as isize + direction.col) as usize,
+        };
+
+        let mut positions_to_move_stack: Vec<(usize, usize)> = Vec::new();
     }
 }
 
