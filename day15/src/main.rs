@@ -46,7 +46,18 @@ fn part2(file_path: &str) -> i32 {
     let doubled_warehouse = double_warehouse(warehouse);
     let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
 
-    0
+    warehouse_map
+        .iter()
+        .filter_map(|position| {
+            if position.1 == &'[' {
+                Some((position.0 .0, position.0 .1))
+            } else {
+                None
+            }
+        })
+        .fold(0, |acc, position| {
+            acc + (100 * position.0 as i32 + position.1 as i32)
+        })
 }
 
 fn process_warehouse_movements(
@@ -136,10 +147,10 @@ mod tests {
         assert_eq!(part1("simple_example.txt"), 2028);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     assert_eq!(part2("test.txt"), 0);
-    // }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2("test.txt"), 9021);
+    }
 
     #[test]
     fn test_move_boxes_to_left_and_empty_down() {
@@ -153,6 +164,38 @@ mod tests {
         assert_eq!(warehouse_map.get(&(3, 8)).unwrap(), &']');
         assert_eq!(warehouse_map.get(&(3, 9)).unwrap(), &'.');
         assert_eq!(warehouse_map.get(&(4, 9)).unwrap(), &'@');
+    }
+
+    #[test]
+    fn test_move_one_box_up() {
+        let (warehouse, _) = get_warehouse_and_movements("simple_example3.txt");
+        let doubled_warehouse = double_warehouse(warehouse);
+        let movements = "^".to_string();
+        let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
+
+        assert_eq!(warehouse_map.get(&(2, 8)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(2, 9)).unwrap(), &']');
+
+        assert_eq!(warehouse_map.get(&(3, 8)).unwrap(), &'@');
+        assert_eq!(warehouse_map.get(&(3, 9)).unwrap(), &'.');
+
+        assert_eq!(warehouse_map.get(&(4, 8)).unwrap(), &'.');
+    }
+
+    #[test]
+    fn test_no_box_moved() {
+        let (warehouse, _) = get_warehouse_and_movements("simple_example3.txt");
+        let doubled_warehouse = double_warehouse(warehouse);
+        let movements = "^^^".to_string();
+        let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
+
+        assert_eq!(warehouse_map.get(&(2, 8)).unwrap(), &'[');
+        assert_eq!(warehouse_map.get(&(2, 9)).unwrap(), &']');
+
+        assert_eq!(warehouse_map.get(&(3, 8)).unwrap(), &'@');
+        assert_eq!(warehouse_map.get(&(3, 9)).unwrap(), &'.');
+
+        assert_eq!(warehouse_map.get(&(4, 8)).unwrap(), &'.');
     }
 
     #[test]
