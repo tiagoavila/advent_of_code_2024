@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs::File,
     io::{self, BufRead},
 };
@@ -133,6 +133,21 @@ fn get_warehouse_and_movements(file_path: &str) -> (Vec<String>, String) {
     (warehouse, movements)
 }
 
+fn print_warehouse_map(warehouse_map: &HashMap<(usize, usize), char>) {
+    let max_row = 10 as usize;
+    let max_col = 20 as usize;
+
+    for row in 0..=max_row {
+        let mut line = String::new();
+        for col in 0..=max_col {
+            if let Some(&ch) = warehouse_map.get(&(row, col)) {
+                line.push(ch);
+            }
+        }
+        println!("{}", line);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -219,5 +234,37 @@ mod tests {
         assert_eq!(warehouse_map.get(&(4, 9)).unwrap(), &'.');
         assert_eq!(warehouse_map.get(&(4, 8)).unwrap(), &'.');
         assert_eq!(warehouse_map.get(&(4, 7)).unwrap(), &'@');
+    }
+
+    #[test]
+    fn test_move_boxes_up_with_string_comparison() {
+        let (warehouse, movements) = get_warehouse_and_movements("test.txt");
+        let doubled_warehouse = double_warehouse(warehouse);
+        let warehouse_map = process_warehouse_movements(doubled_warehouse, movements);
+
+        let expected_warehouse = vec![
+            "####################",
+            "##[].......[].[][]##",
+            "##[]...........[].##",
+            "##[]........[][][]##",
+            "##[]......[]....[]##",
+            "##..##......[]....##",
+            "##..[]............##",
+            "##..@......[].[][]##",
+            "##......[][]..[]..##",
+            "####################",
+        ];
+
+        let mut result_warehouse = vec![vec!['#'; 20]; 10];
+        for ((row, col), &ch) in &warehouse_map {
+            result_warehouse[*row][*col] = ch;
+        }
+
+        let result_warehouse: Vec<String> = result_warehouse
+            .into_iter()
+            .map(|row| row.into_iter().collect())
+            .collect();
+
+        assert_eq!(result_warehouse, expected_warehouse);
     }
 }

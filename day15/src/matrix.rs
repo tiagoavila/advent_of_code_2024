@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Direction {
@@ -99,6 +99,7 @@ impl Robot {
             return *self;
         }
 
+        self.is_stuck = false;
         self.current_direction = direction;
 
         let new_robot_position = Self {
@@ -168,12 +169,12 @@ impl Robot {
             current_direction: direction,
         };
 
-        let mut positions_to_move_stack: Vec<(usize, usize)> = Vec::new();
-        positions_to_move_stack.push((new_robot_position.row, new_robot_position.col));
+        let mut positions_to_move: Vec<(usize, usize)> = Vec::new();
+        positions_to_move.push((new_robot_position.row, new_robot_position.col));
 
         while let Some(&ch) = warehouse_map.get(&(neighbor_position.row, neighbor_position.col)) {
             if ch == '[' || ch == ']' {
-                positions_to_move_stack.push((neighbor_position.row, neighbor_position.col));
+                positions_to_move.push((neighbor_position.row, neighbor_position.col));
 
                 neighbor_position.row = (neighbor_position.row as isize + direction.row) as usize;
                 neighbor_position.col = (neighbor_position.col as isize + direction.col) as usize;
@@ -184,11 +185,11 @@ impl Robot {
 
         if let Some(ch) = warehouse_map.get(&(neighbor_position.row, neighbor_position.col)) {
             if *ch == '.' {
-                positions_to_move_stack.push((neighbor_position.row, neighbor_position.col));
+                positions_to_move.push((neighbor_position.row, neighbor_position.col));
 
-                while !positions_to_move_stack.is_empty() {
-                    let (row, col) = positions_to_move_stack.pop().unwrap();
-                    match positions_to_move_stack.last() {
+                while !positions_to_move.is_empty() {
+                    let (row, col) = positions_to_move.pop().unwrap();
+                    match positions_to_move.last() {
                         Some((previous_row, previous_col)) => {
                             *warehouse_map.get_mut(&(row, col)).unwrap() =
                                 *warehouse_map.get(&(*previous_row, *previous_col)).unwrap();
@@ -213,21 +214,21 @@ impl Robot {
         direction: Direction,
         new_robot_position: Robot,
     ) {
-        let mut positions_to_move_stack: Vec<(usize, usize)> = Vec::new();
-
-        positions_to_move_stack.push((new_robot_position.row, new_robot_position.col));
+        let mut positions_to_move: Vec<(usize, usize)> = Vec::new();
+        positions_to_move.push((new_robot_position.row, new_robot_position.col));
 
         if warehouse_map
             .get(&(new_robot_position.row, new_robot_position.col))
             .unwrap()
             == &'['
         {
-            positions_to_move_stack.push((new_robot_position.row, new_robot_position.col + 1));
+            positions_to_move.push((new_robot_position.row, new_robot_position.col + 1));
         } else {
-            positions_to_move_stack.push((new_robot_position.row, new_robot_position.col - 1));
+            positions_to_move.push((new_robot_position.row, new_robot_position.col - 1));
         }
 
-        let mut queue: VecDeque<(usize, usize)> = VecDeque::from(positions_to_move_stack.clone());
+        let mut queue: VecDeque<(usize, usize)> = VecDeque::from(positions_to_move.clone());
+        let mut visited_positions: HashSet<(usize, usize)> = positions_to_move.clone().into_iter().collect();
 
         while !queue.is_empty() {
             let (row, col) = queue.pop_front().unwrap();
@@ -241,27 +242,26 @@ impl Robot {
 
             if let Some(&ch) = warehouse_map.get(&(neighbor_position.row, neighbor_position.col)) {
                 match ch {
-                    '[' => {
-                        positions_to_move_stack
-                            .push((neighbor_position.row, neighbor_position.col));
-                        queue.push_back((neighbor_position.row, neighbor_position.col));
+                    '[' | ']' => {
+                        let mut other_side_of_box = neighbor_position.col + 1;
+                        if ch == ']' {
+                            other_side_of_box = neighbor_position.col - 1;
+                        } 
 
-                        let other_side_of_box = neighbor_position.col + 1;
-                        positions_to_move_stack.push((neighbor_position.row, other_side_of_box));
-                        queue.push_back((neighbor_position.row, other_side_of_box));
-                    }
-                    ']' => {
-                        positions_to_move_stack
-                            .push((neighbor_position.row, neighbor_position.col));
-                        queue.push_back((neighbor_position.row, neighbor_position.col));
+                        if !visited_positions.contains(&(neighbor_position.row, neighbor_position.col)) {
+                            positions_to_move.push((neighbor_position.row, neighbor_position.col));
+                            queue.push_back((neighbor_position.row, neighbor_position.col));
+                            visited_positions.insert((neighbor_position.row, neighbor_position.col));
+                        }
 
-                        let other_side_of_box = neighbor_position.col - 1;
-                        positions_to_move_stack.push((neighbor_position.row, other_side_of_box));
-                        queue.push_back((neighbor_position.row, other_side_of_box));
+                        if !visited_positions.contains(&(neighbor_position.row, other_side_of_box)) {
+                            positions_to_move.push((neighbor_position.row, other_side_of_box));
+                            queue.push_back((neighbor_position.row, other_side_of_box));
+                            visited_positions.insert((neighbor_position.row, other_side_of_box));
+                        }
                     }
                     '#' => {
                         self.is_stuck = true;
-
                         break;
                     }
                     _ => (),
@@ -273,10 +273,13 @@ impl Robot {
             return;
         }
 
-        while !positions_to_move_stack.is_empty() {
-            let (box_row, box_col) = positions_to_move_stack.pop().unwrap();
+        while !positions_to_move.is_empty() {
+            let (box_row, box_col) = positions_to_move.pop().unwrap();
             let box_value = warehouse_map.get(&(box_row, box_col)).unwrap().clone();
-            let (new_row, new_col) = (box_row as isize + direction.row, box_col as isize + direction.col);
+            let (new_row, new_col) = (
+                box_row as isize + direction.row,
+                box_col as isize + direction.col,
+            );
 
             warehouse_map
                 .entry((new_row as usize, new_col as usize))
@@ -285,7 +288,6 @@ impl Robot {
             warehouse_map
                 .entry((box_row, box_col))
                 .and_modify(|v| *v = '.');
-
         }
 
         self.update_position(warehouse_map, new_robot_position);
