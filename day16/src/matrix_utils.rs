@@ -4,7 +4,7 @@ pub struct MatrixUtils {
     cols: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Cell {
    Tile,
    Wall 
