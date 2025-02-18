@@ -5,10 +5,10 @@ use std::{
     path,
 };
 
-use matrix_utils::{Cell, MatrixUtils};
+use matrix_utils::{Cell, Direction, MatrixUtils};
 use petgraph::{
     algo::{self},
-    graph::UnGraph,
+    graph::{NodeIndex, UnGraph},
 };
 
 mod matrix_utils;
@@ -106,12 +106,11 @@ fn part1(file_path: &str) -> u32 {
     let g = UnGraph::<(), ()>::from_edges(edges.iter().cloned());
     let paths = algo::all_simple_paths::<Vec<_>, _>(&g, start.into(), end.into(), 0, None)
         .collect::<Vec<_>>();
-    paths.iter().for_each(|path| {
-        let single_path = path.iter().map(|&x| matrix_utils.index_to_coords(x.index() as usize).unwrap()).collect::<Vec<_>>();
-        println!("single_path: {:?}", single_path);
-    });
-    
-    paths.iter().map(|path| path.len() as u32).min().unwrap()
+    paths
+        .iter()
+        .map(|path: &Vec<NodeIndex>| calculate_path_score(path, &matrix_utils))
+        .min()
+        .unwrap()
 }
 
 fn part2(file_path: &str) -> i32 {
@@ -129,6 +128,84 @@ fn read_file(file_path: &str) -> io::Result<Vec<String>> {
     Ok(lines)
 }
 
+fn calculate_path_score(path: &Vec<NodeIndex>, matrix_utils: &MatrixUtils) -> u32 {
+    let mut score = 0;
+    let mut direction = Direction::Right;
+    let mut previous_position: (usize, usize) = matrix_utils
+        .index_to_coords(path[0].index() as usize)
+        .unwrap();
+    for i in 1..path.len() {
+        let current_position: (usize, usize) = matrix_utils
+            .index_to_coords(path[i].index() as usize)
+            .unwrap();
+        let move_direction = get_move_direction(previous_position, current_position);
+        score += calculate_move_score(&direction, &move_direction);
+
+        direction = move_direction;
+        previous_position = current_position;
+    }
+
+    score
+}
+
+fn get_move_direction(
+    previous_position: (usize, usize),
+    current_position: (usize, usize),
+) -> Direction {
+    if previous_position.0 == current_position.0 {
+        if previous_position.1 < current_position.1 {
+            return Direction::Right;
+        }
+
+        return Direction::Left;
+    }
+
+    if previous_position.0 < current_position.0 {
+        return Direction::Down;
+    }
+
+    Direction::Up
+}
+
+fn calculate_move_score(current_direction: &Direction, move_direction: &Direction) -> u32 {
+    if current_direction == move_direction {
+        return 1;
+    }
+
+    match current_direction {
+        Direction::Up | Direction::Down => {
+            if *move_direction == Direction::Left || *move_direction == Direction::Right {
+                return 1000;
+            }
+
+            if *current_direction == Direction::Up && *move_direction == Direction::Down {
+                return 2000;
+            }
+
+            if *current_direction == Direction::Down && *move_direction == Direction::Up {
+                return 2000;
+            }
+
+            return 0;
+        }
+        Direction::Left | Direction::Right => {
+            if *move_direction == Direction::Up || *move_direction == Direction::Down {
+                return 1000;
+            }
+
+            if *current_direction == Direction::Left && *move_direction == Direction::Right {
+                return 2000;
+            }
+
+            if *current_direction == Direction::Right && *move_direction == Direction::Left {
+                return 2000;
+            }
+
+            return 0;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -138,10 +215,10 @@ mod tests {
         assert_eq!(part1("test.txt"), 7036);
     }
 
-    // #[test]
-    // fn test_part1_example2() {
-    //     assert_eq!(part1("test2.txt"), 11048);
-    // }
+    #[test]
+    fn test_part1_example2() {
+        assert_eq!(part1("test2.txt"), 11048);
+    }
 
     #[test]
     fn test_part2() {

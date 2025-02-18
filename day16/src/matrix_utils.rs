@@ -10,6 +10,14 @@ pub enum Cell {
    Wall 
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right
+}
+
 impl MatrixUtils {
     /// Creates a new MatrixUtils instance
     pub fn new(rows: usize, cols: usize) -> Self {
