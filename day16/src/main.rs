@@ -16,7 +16,7 @@ mod matrix_utils;
 fn main() {
     println!("Advent of Code 2024 - day16");
     println!("Part 1: {}", part1("challenge.txt"));
-    println!("Part 2: {}", part2("challenge.txt"));
+    // println!("Part 2: {}", part2("challenge.txt"));
 }
 
 fn part1(file_path: &str) -> u32 {
@@ -56,8 +56,8 @@ fn part1(file_path: &str) -> u32 {
     let directions = vec![(-1, 0), (1, 0), (0, -1), (0, 1)];
     let mut edges: Vec<(u32, u32)> = Vec::new();
 
-    for row in 0..rows_len {
-        for col in 0..cols_len {
+    for row in 1..rows_len - 1 {
+        for col in 1..cols_len - 1 {
             if maze[row][col] == Cell::Wall {
                 continue;
             }
@@ -175,30 +175,30 @@ fn calculate_move_score(current_direction: &Direction, move_direction: &Directio
     match current_direction {
         Direction::Up | Direction::Down => {
             if *move_direction == Direction::Left || *move_direction == Direction::Right {
-                return 1000;
+                return 1001;
             }
 
             if *current_direction == Direction::Up && *move_direction == Direction::Down {
-                return 2000;
+                return 2001;
             }
 
             if *current_direction == Direction::Down && *move_direction == Direction::Up {
-                return 2000;
+                return 2001;
             }
 
             return 0;
         }
         Direction::Left | Direction::Right => {
             if *move_direction == Direction::Up || *move_direction == Direction::Down {
-                return 1000;
+                return 1001;
             }
 
             if *current_direction == Direction::Left && *move_direction == Direction::Right {
-                return 2000;
+                return 2001;
             }
 
             if *current_direction == Direction::Right && *move_direction == Direction::Left {
-                return 2000;
+                return 2001;
             }
 
             return 0;
@@ -218,6 +218,21 @@ mod tests {
     #[test]
     fn test_part1_example2() {
         assert_eq!(part1("test2.txt"), 11048);
+    }
+
+    #[test]
+    fn test_path_score() {
+        let matrix_utils = MatrixUtils::new(15, 15);
+        let path = vec![(13, 1), (12, 1), (11, 1), (10, 1), (9, 1), (9, 2), (9, 3), (8, 3), (7, 3), (7, 4), (7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (7, 10), (7, 11), (8, 11), (9, 11), (10, 11), (11, 11), (12, 11), (13, 11), (13, 12), (13, 13), (12, 13), (11, 13), (10, 13), (9, 13), (8, 13), (7, 13), (6, 13), (5, 13), (4, 13), (3, 13), (2, 13), (1, 13)];
+        let path_as_node_indexes = path // Convert the path to node indexes
+            .iter()
+            .map(|(row, col)| {
+                let index = matrix_utils.coords_to_index(*row, *col).unwrap();
+                NodeIndex::new(index as usize)
+            })
+            .collect::<Vec<_>>();
+        let result = calculate_path_score(&path_as_node_indexes, &matrix_utils);
+        assert_eq!(result, 7036);
     }
 
     #[test]
