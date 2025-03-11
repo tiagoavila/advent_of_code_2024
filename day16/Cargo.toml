@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 petgraph = "0.7.1"
+priority-queue = "2.2.2"

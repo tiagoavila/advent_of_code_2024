@@ -10,8 +10,15 @@ use petgraph::{
     algo::{self},
     graph::{NodeIndex, UnGraph},
 };
+use priority_queue::PriorityQueue;
+use std::cmp::Reverse;
 
 mod matrix_utils;
+
+struct StepState {
+    position: (usize, usize),
+    direction: Direction
+}
 
 fn main() {
     println!("Advent of Code 2024 - day16");
@@ -20,6 +27,62 @@ fn main() {
 }
 
 fn part1(file_path: &str) -> u32 {
+    let lines = read_file(file_path).unwrap();
+    let mut start_position: (usize, usize) = (0, 0);
+    let mut end_position: (usize, usize) = (0, 0);
+    let maze = parse_input_to_maze_matrix(lines, &mut start_position, end_position);
+
+    let rows_len = maze.len();
+    let cols_len = maze[0].len();
+    let mut priority_queue = PriorityQueue::new();
+    let mut known_distances: HashMap<(usize, usize), u32> = HashMap::new();
+    known_distances.insert(start_position, 0);
+
+    let directions = vec![(-1, 0), (1, 0), (0, -1), (0, 1)];
+    for direction in directions.iter() {
+        let new_row = (start_position.0 as i32 + direction.0) as usize;
+        let new_col = (start_position.1 as i32 + direction.1) as usize;
+
+        if maze[new_row][new_col] == Cell::Wall {
+            continue;
+        }
+        priority_queue.push(start_position, Reverse(0));
+    }
+
+    0 as u32
+}
+
+fn parse_input_to_maze_matrix(lines: Vec<String>, start_position: &mut (usize, usize), mut end_position: (usize, usize)) -> Vec<Vec<Cell>> {
+    let maze: Vec<Vec<Cell>> = lines
+        .iter()
+        .enumerate()
+        .map(|(row, line)| {
+            line.chars()
+                .enumerate()
+                .map(|(col, c)| {
+                    if c == 'S' {
+                        *start_position = (row, col);
+                        return Cell::Tile;
+                    }
+
+                    if c == 'E' {
+                        end_position = (row, col);
+                        return Cell::Tile;
+                    }
+
+                    if c == '.' {
+                        return Cell::Tile;
+                    }
+
+                    Cell::Wall
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    maze
+}
+
+fn part1_old(file_path: &str) -> u32 {
     let lines = read_file(file_path).unwrap();
     let mut start_position: (usize, usize) = (0, 0);
     let mut end_position: (usize, usize) = (0, 0);
@@ -223,7 +286,45 @@ mod tests {
     #[test]
     fn test_path_score() {
         let matrix_utils = MatrixUtils::new(15, 15);
-        let path = vec![(13, 1), (12, 1), (11, 1), (10, 1), (9, 1), (9, 2), (9, 3), (8, 3), (7, 3), (7, 4), (7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (7, 10), (7, 11), (8, 11), (9, 11), (10, 11), (11, 11), (12, 11), (13, 11), (13, 12), (13, 13), (12, 13), (11, 13), (10, 13), (9, 13), (8, 13), (7, 13), (6, 13), (5, 13), (4, 13), (3, 13), (2, 13), (1, 13)];
+        let path = vec![
+            (13, 1),
+            (12, 1),
+            (11, 1),
+            (10, 1),
+            (9, 1),
+            (9, 2),
+            (9, 3),
+            (8, 3),
+            (7, 3),
+            (7, 4),
+            (7, 5),
+            (7, 6),
+            (7, 7),
+            (7, 8),
+            (7, 9),
+            (7, 10),
+            (7, 11),
+            (8, 11),
+            (9, 11),
+            (10, 11),
+            (11, 11),
+            (12, 11),
+            (13, 11),
+            (13, 12),
+            (13, 13),
+            (12, 13),
+            (11, 13),
+            (10, 13),
+            (9, 13),
+            (8, 13),
+            (7, 13),
+            (6, 13),
+            (5, 13),
+            (4, 13),
+            (3, 13),
+            (2, 13),
+            (1, 13),
+        ];
         let path_as_node_indexes = path // Convert the path to node indexes
             .iter()
             .map(|(row, col)| {
