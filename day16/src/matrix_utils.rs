@@ -10,7 +10,7 @@ pub enum Cell {
    Wall 
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 pub enum Direction {
     Up,
     Down,

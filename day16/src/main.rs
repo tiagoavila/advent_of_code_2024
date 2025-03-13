@@ -2,22 +2,23 @@ use std::{
     collections::{HashMap, HashSet},
     fs::File,
     io::{self, BufRead},
-    path,
+    path, result,
 };
 
 use matrix_utils::{Cell, Direction, MatrixUtils};
+use pathfinding::prelude::dijkstra;
 use petgraph::{
     algo::{self},
     graph::{NodeIndex, UnGraph},
 };
-use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 
 mod matrix_utils;
 
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct StepState {
     position: (usize, usize),
-    direction: Direction
+    direction: Direction,
 }
 
 fn main() {
@@ -28,31 +29,99 @@ fn main() {
 
 fn part1(file_path: &str) -> u32 {
     let lines = read_file(file_path).unwrap();
-    let mut start_position: (usize, usize) = (0, 0);
-    let mut end_position: (usize, usize) = (0, 0);
-    let maze = parse_input_to_maze_matrix(lines, &mut start_position, end_position);
+    let (maze, start_position, end_position) = parse_input_to_maze_matrix(lines);
 
     let rows_len = maze.len();
     let cols_len = maze[0].len();
-    let mut priority_queue = PriorityQueue::new();
-    let mut known_distances: HashMap<(usize, usize), u32> = HashMap::new();
-    known_distances.insert(start_position, 0);
+    let mut directions = HashMap::new();
+    directions.insert(Direction::Right, (0, 1));
+    directions.insert(Direction::Left, (0, -1));
+    directions.insert(Direction::Up, (-1, 0));
+    directions.insert(Direction::Down, (1, 0));
 
-    let directions = vec![(-1, 0), (1, 0), (0, -1), (0, 1)];
-    for direction in directions.iter() {
-        let new_row = (start_position.0 as i32 + direction.0) as usize;
-        let new_col = (start_position.1 as i32 + direction.1) as usize;
+    let result = dijkstra(
+        &start_position,
+        |pos| {
+            let mut neighbors: Vec<(StepState, u32)> = Vec::new();
+            let neighbor_same_direction = (
+                pos.position.0 as i32 + directions[&pos.direction].0,
+                pos.position.1 as i32 + directions[&pos.direction].1,
+            );
+            if maze[neighbor_same_direction.0 as usize][neighbor_same_direction.1 as usize]
+                == Cell::Tile
+            {
+                push_neighbor(&mut neighbors, neighbor_same_direction, &pos.direction, 1);
+            }
 
-        if maze[new_row][new_col] == Cell::Wall {
-            continue;
-        }
-        priority_queue.push(start_position, Reverse(0));
+            match pos.direction {
+                Direction::Right | Direction::Left => {
+                    let neighbor_up = (
+                        pos.position.0 as i32 + directions[&Direction::Up].0,
+                        pos.position.1 as i32 + directions[&Direction::Up].1,
+                    );
+                    let neighbor_down = (
+                        pos.position.0 as i32 + directions[&Direction::Down].0,
+                        pos.position.1 as i32 + directions[&Direction::Down].1,
+                    );
+                    if maze[neighbor_up.0 as usize][neighbor_up.1 as usize] == Cell::Tile {
+                        push_neighbor(&mut neighbors, neighbor_up, &Direction::Up, 1001);
+                    }
+                    if maze[neighbor_down.0 as usize][neighbor_down.1 as usize] == Cell::Tile {
+                        push_neighbor(&mut neighbors, neighbor_down, &Direction::Down, 1001);
+                    }
+                }
+                Direction::Up | Direction::Down => {
+                    let neighbor_left = (
+                        pos.position.0 as i32 + directions[&Direction::Left].0,
+                        pos.position.1 as i32 + directions[&Direction::Left].1,
+                    );
+                    let neighbor_right = (
+                        pos.position.0 as i32 + directions[&Direction::Right].0,
+                        pos.position.1 as i32 + directions[&Direction::Right].1,
+                    );
+                    if maze[neighbor_left.0 as usize][neighbor_left.1 as usize] == Cell::Tile {
+                        push_neighbor(&mut neighbors, neighbor_left, &Direction::Left, 1001);
+                    }
+                    if maze[neighbor_right.0 as usize][neighbor_right.1 as usize] == Cell::Tile {
+                        push_neighbor(&mut neighbors, neighbor_right, &Direction::Right, 1001);
+                    }
+                }
+            }
+            return neighbors;
+        },
+        |pos| {
+            let (row, col) = pos.position;
+            return row == end_position.0 && col == end_position.1;
+        },
+    );
+
+    match result {
+        Some((_, score)) => score,
+        None => 0,
     }
-
-    0 as u32
 }
 
-fn parse_input_to_maze_matrix(lines: Vec<String>, start_position: &mut (usize, usize), mut end_position: (usize, usize)) -> Vec<Vec<Cell>> {
+fn push_neighbor(
+    neighbors: &mut Vec<(StepState, u32)>,
+    neighbor: (i32, i32),
+    direction: &Direction,
+    cost: u32,
+) {
+    neighbors.push((
+        StepState {
+            position: (neighbor.0 as usize, neighbor.1 as usize),
+            direction: direction.clone(),
+        },
+        cost,
+    ));
+}
+
+fn parse_input_to_maze_matrix(lines: Vec<String>) -> (Vec<Vec<Cell>>, StepState, (usize, usize)) {
+    let mut start_position: StepState = StepState {
+        position: (0, 0),
+        direction: Direction::Right,
+    };
+    let mut end_position: (usize, usize) = (0, 0);
     let maze: Vec<Vec<Cell>> = lines
         .iter()
         .enumerate()
@@ -61,7 +130,7 @@ fn parse_input_to_maze_matrix(lines: Vec<String>, start_position: &mut (usize, u
                 .enumerate()
                 .map(|(col, c)| {
                     if c == 'S' {
-                        *start_position = (row, col);
+                        start_position.position = (row, col);
                         return Cell::Tile;
                     }
 
@@ -79,7 +148,7 @@ fn parse_input_to_maze_matrix(lines: Vec<String>, start_position: &mut (usize, u
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    maze
+    (maze, start_position, end_position)
 }
 
 fn part1_old(file_path: &str) -> u32 {
