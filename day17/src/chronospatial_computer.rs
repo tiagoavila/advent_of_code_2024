@@ -62,6 +62,14 @@ impl Computer {
         }
     }
 
+    pub fn print_output(&self) -> String {
+        self.output
+            .iter()
+            .map(|c| c.to_string())
+            .collect::<Vec<String>>()
+            .join(",")
+    }
+
     fn get_register_from_input(input: String, register_name: &str) -> usize {
         let register = format!("Register {}: ", register_name);
         input.replacen(&register, "", 1).parse::<usize>().unwrap()
@@ -77,14 +85,14 @@ impl Computer {
         self
     }
 
-    /// The bxl instruction (opcode 1) calculates the bitwise XOR of register B and 
+    /// The bxl instruction (opcode 1) calculates the bitwise XOR of register B and
     /// the instruction's literal operand, then stores the result in register B.
     fn bxl(&mut self, operand: usize) -> &mut Computer {
         self.register_b = self.register_b ^ operand;
         self
     }
 
-    /// The bst instruction (opcode 2) calculates the value of its combo operand modulo 8 
+    /// The bst instruction (opcode 2) calculates the value of its combo operand modulo 8
     /// (thereby keeping only its lowest 3 bits), then writes that value to the B register.
     fn bst(&mut self, operand: usize) -> &mut Computer {
         let operand: usize = self.get_combo_operand_value(operand);
@@ -108,7 +116,7 @@ impl Computer {
     }
 
     /// The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C,
-    /// then stores the result in register B. (For legacy reasons, this instruction reads an 
+    /// then stores the result in register B. (For legacy reasons, this instruction reads an
     /// operand but ignores it.)
     fn bxc(&mut self, _: usize) -> &mut Computer {
         self.register_b = self.register_b ^ self.register_c;
@@ -125,16 +133,16 @@ impl Computer {
         self
     }
 
-    /// The bdv instruction (opcode 6) works exactly like the adv instruction except that 
-    /// the result is stored in the B register. (The numerator is still read from the A 
+    /// The bdv instruction (opcode 6) works exactly like the adv instruction except that
+    /// the result is stored in the B register. (The numerator is still read from the A
     /// register.)
     fn bdv(&mut self, operand: usize) -> &mut Computer {
         self.register_b = self.do_division(operand);
         self
     }
-    
-    /// The cdv instruction (opcode 7) works exactly like the adv instruction except that 
-    /// the result is stored in the C register. (The numerator is still read from the A 
+
+    /// The cdv instruction (opcode 7) works exactly like the adv instruction except that
+    /// the result is stored in the C register. (The numerator is still read from the A
     /// register.)
     fn cdv(&mut self, operand: usize) -> &mut Computer {
         self.register_c = self.do_division(operand);

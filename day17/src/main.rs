@@ -1,5 +1,4 @@
 use std::{
-    collections::{HashMap, HashSet},
     fs::File,
     io::{self, BufRead},
 };
@@ -17,11 +16,12 @@ fn part1(file_path: &str) -> String {
     let mut lines = read_file(file_path).unwrap();
     let mut computer: Computer = Computer::new_from_input(&mut lines);
     computer.execute();
-    computer.output.iter().map(|c| c.to_string()).collect::<Vec<String>>().join(",")
+    computer.print_output()
 }
 
 fn part2(file_path: &str) -> i32 {
     let mut lines = read_file(file_path).unwrap();
+    let mut computer: Computer = Computer::new_from_input(&mut lines);
     0
 }
 
