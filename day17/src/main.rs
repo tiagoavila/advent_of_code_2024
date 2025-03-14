@@ -144,4 +144,22 @@ mod tests {
         computer.execute();
         assert_eq!(computer.register_b, 44354);
     }
+
+    #[test]
+    fn text_copy_of_itself() {
+            let mut lines: Vec<String> = vec![
+            "Register A: 117440",
+            "Register B: 0",
+            "Register C: 0",
+            "",
+            "Program: 0,3,5,4,3,0",
+        ]
+        .iter()
+        .map(|&line| line.to_string())
+        .collect();
+        let mut computer: Computer = Computer::new_from_input(&mut lines);
+        computer.execute();
+        println!("{:?}", computer.output);
+        assert!(computer.output.len() > 0);
+    }
 }
