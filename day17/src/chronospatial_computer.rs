@@ -56,6 +56,9 @@ impl Computer {
                 _ => self,
             };
 
+            // println!("Register A: {}, Register B: {}, Register C: {}, Output: {}",
+            //          self.register_a, self.register_b, self.register_c, self.print_output());
+
             if opcode != 3 {
                 self.instruction_pointer += 2;
             }
@@ -68,6 +71,14 @@ impl Computer {
             .map(|c| c.to_string())
             .collect::<Vec<String>>()
             .join(",")
+    }
+
+    pub fn reset(&mut self, register_a: usize) {
+        self.register_a = register_a;
+        self.register_b = 0;
+        self.register_c = 0;
+        self.instruction_pointer = 0;
+        self.output = Vec::new();
     }
 
     fn get_register_from_input(input: String, register_name: &str) -> usize {

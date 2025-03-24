@@ -1,6 +1,5 @@
 use std::{
-    fs::File,
-    io::{self, BufRead},
+    collections::HashSet, fs::File, io::{self, BufRead}
 };
 
 use chronospatial_computer::Computer;
@@ -8,7 +7,7 @@ mod chronospatial_computer;
 
 fn main() {
     println!("Advent of Code 2024 - day17");
-    println!("Part 1: {}", part1("challenge.txt"));
+    // println!("Part 1: {}", part1("challenge.txt"));
     println!("Part 2: {}", part2("challenge.txt"));
 }
 
@@ -22,6 +21,17 @@ fn part1(file_path: &str) -> String {
 fn part2(file_path: &str) -> i32 {
     let mut lines = read_file(file_path).unwrap();
     let mut computer: Computer = Computer::new_from_input(&mut lines);
+    let register_a = computer.register_a;
+    // for a in 35184372088831..281474976710655 {
+    for a in 7..1000 {
+        computer.register_a = a;
+        computer.execute();
+        if computer.output[0] == 2 {
+            println!("a: {:b} - {:?} - output: {:?}", a, a, computer.output);
+        }
+        computer.reset(register_a);
+    }
+
     0
 }
 
@@ -148,7 +158,7 @@ mod tests {
     #[test]
     fn text_copy_of_itself() {
             let mut lines: Vec<String> = vec![
-            "Register A: 117440",
+            "Register A: 2024",
             "Register B: 0",
             "Register C: 0",
             "",
