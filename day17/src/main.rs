@@ -1,3 +1,4 @@
+use core::num;
 use std::{
     collections::HashSet, fs::File, io::{self, BufRead}
 };
@@ -8,7 +9,8 @@ mod chronospatial_computer;
 fn main() {
     println!("Advent of Code 2024 - day17");
     // println!("Part 1: {}", part1("challenge.txt"));
-    println!("Part 2: {}", part2("challenge.txt"));
+    // println!("Part 2: {}", part2("challenge.txt"));
+    println!("Part 2: {}", part2("test.txt"));
 }
 
 fn part1(file_path: &str) -> String {
@@ -18,21 +20,33 @@ fn part1(file_path: &str) -> String {
     computer.print_output()
 }
 
-fn part2(file_path: &str) -> i32 {
+fn part2(file_path: &str) -> i64 {
     let mut lines = read_file(file_path).unwrap();
     let mut computer: Computer = Computer::new_from_input(&mut lines);
     let register_a = computer.register_a;
-    // for a in 35184372088831..281474976710655 {
-    for a in 7..1000 {
-        computer.register_a = a;
-        computer.execute();
-        if computer.output[0] == 2 {
-            println!("a: {:b} - {:?} - output: {:?}", a, a, computer.output);
+    let mut number = String::new();
+    for i in 0..computer.instructions.len() {
+        for a in 0..8 {
+            computer.reset(register_a);
+            computer.register_a = a;
+            computer.execute();
+            if computer.output[0] == computer.instructions[i] {
+                number.push_str(&a.to_string());
+                break;
+            }
         }
-        computer.reset(register_a);
     }
+    println!("{}", number);
 
     0
+}
+
+fn print_binary<T: std::fmt::Binary + std::fmt::Display>(number: T, bit_width: usize) {
+    // Convert the number to a binary string representation
+    let binary_str = format!("{:0width$b}", number, width = bit_width);
+    
+    // Print the binary representation
+    println!("{}", binary_str);
 }
 
 fn read_file(file_path: &str) -> io::Result<Vec<String>> {
@@ -58,7 +72,12 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2("test.txt"), 0);
+        assert_eq!(part2("test.txt"), 117440);
+    }
+
+    #[test]
+    fn test_part2_challenge() {
+        assert_eq!(part2("challenge.txt"), 105875099912602);
     }
 
     /// If register C contains 9, the program 2,6 would set register B to 1.

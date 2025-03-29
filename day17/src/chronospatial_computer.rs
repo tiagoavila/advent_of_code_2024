@@ -3,7 +3,7 @@ pub struct Computer {
     pub register_b: usize,
     pub register_c: usize,
     instruction_pointer: usize,
-    instructions: Vec<usize>,
+    pub instructions: Vec<usize>,
     pub output: Vec<usize>,
 }
 
